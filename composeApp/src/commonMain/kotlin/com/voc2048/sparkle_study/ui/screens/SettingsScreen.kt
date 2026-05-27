@@ -15,13 +15,12 @@ import androidx.compose.ui.unit.sp
 import com.voc2048.sparkle_study.ui.components.AccountCard
 import com.voc2048.sparkle_study.ui.components.SettingsGroup
 import com.voc2048.sparkle_study.ui.components.SettingsItem
-import com.voc2048.sparkle_study.getAppInfo
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.*
+import com.voc2048.sparkle_study.BuildKonfig
 
 @Composable
 fun SettingsScreen() {
-    val appInfo = getAppInfo()
 
     LazyColumn(
         modifier = Modifier
@@ -76,7 +75,7 @@ fun SettingsScreen() {
         item {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(
-                    "版本 ${appInfo.version} (Build ${appInfo.buildNumber})",
+                    BuildKonfig.appVersionName,
                     fontSize = 12.sp,
                     color = Color.Gray,
                     modifier = Modifier.padding(top = 16.dp)

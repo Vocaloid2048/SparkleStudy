@@ -8,8 +8,6 @@ import coil3.PlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.util.DebugLogger
-import com.voc2048.sparkle_study.DeviceType
-import com.voc2048.sparkle_study.getDeviceType
 
 /**
  * 通用工具類，整合了時間、單位轉換、平台判斷、Coil 配置等功能。
@@ -59,15 +57,6 @@ object UtilsTools {
     @Composable
     fun dpToPx(dp: Dp): Float {
         return with(LocalDensity.current) { dp.toPx() }
-    }
-
-    // --- 平台與環境判斷相關 (Platform & Env) ---
-
-    /**
-     * 判斷當前是否為平板模式。
-     */
-    fun isTablet(): Boolean {
-        return getDeviceType() == DeviceType.TABLET
     }
 
     // --- Coil 圖片載入配置 (Coil Configuration) ---
