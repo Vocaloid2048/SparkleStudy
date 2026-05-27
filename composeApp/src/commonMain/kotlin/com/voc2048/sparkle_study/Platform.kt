@@ -1,7 +1,47 @@
 package com.voc2048.sparkle_study
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.unit.Dp
+import com.voc2048.sparkle_study.types.DeviceInfo
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.utils.io.ByteReadChannel
 
-interface Platform {
-    val name: String
+/**
+ * This is the declaration kt file for specific-platform function
+ * THIS IS COMMON-MAIN, so ONLY EXPECT
+ */
+
+expect fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap;
+
+expect fun getByteArrayByImageBitmap(imageBitmap: ImageBitmap): ByteArray;
+
+@Composable
+expect fun getIsLandscape(): Boolean;
+
+/** Getting screen size info for UI-related calculations */
+data class ScreenSizeInfo(val hPX: Int, val wPX: Int, val hDP: Dp, val wDP: Dp)
+
+@Composable
+@Deprecated("Use BoxWithConstraints() instead")
+expect fun getScreenSizeInfo(): ScreenSizeInfo
+
+expect fun getDeviceInfo(): DeviceInfo
+
+expect fun getLocalHttpClient(function: HttpClientConfig<*>.() -> Unit): HttpClient
+
+expect fun changeLanguage(language: String, region: String? = null)
+
+//ref: https://medium.com/@robert.jamison/passing-android-context-in-kmp-jetpack-compose-8de5b5de7bdd
+expect class ContextFactory {
+    fun getContext(): Any
+    fun getApplication(): Any
+    fun getActivity(): Any
 }
 
-expect fun getPlatform(): Platform
+expect fun getAppSpecificDirectory(): okio.Path
+
+//ref: https://stackoverflow.com/questions/78739232/how-to-save-a-response-body-to-a-file-in-kotlin-multiplatform-with-ktor
+expect suspend fun ByteReadChannel.writeToFile(filepath: String)
+
+expect fun exitApp(): Unit
