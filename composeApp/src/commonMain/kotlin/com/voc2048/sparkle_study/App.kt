@@ -38,7 +38,7 @@ fun App(contextFactory: ContextFactory) {
         LayoutDirection.Rtl else LayoutDirection.Ltr
 
     // 登入狀態模擬
-    var isLoggedIn by remember { mutableStateOf(false) }
+    var isLoggedIn by remember { mutableStateOf(true) }
 
     CompositionLocalProvider(LocalLayoutDirection provides direction) {
         SparkleStudyTheme {
