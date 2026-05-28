@@ -6,7 +6,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.voc2048.sparkle_study.utils.SparkleColorScheme
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.*
 
@@ -29,7 +31,7 @@ fun MainScreen() {
     Scaffold(
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = SparkleColorScheme.background,
                 tonalElevation = 8.dp
             ) {
                 val tabs = listOf(
@@ -52,18 +54,18 @@ fun MainScreen() {
                         },
                         label = { Text(tab.title) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                            selectedIconColor = SparkleColorScheme.primary,
+                            selectedTextColor = SparkleColorScheme.primary,
+                            unselectedIconColor = SparkleColorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            unselectedTextColor = SparkleColorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            indicatorColor = SparkleColorScheme.primary.copy(alpha = 0.2f)
                         )
                     )
                 }
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
+        Box(modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())) {
             when (selectedTab) {
                 MainTab.StudyRoom -> StudyRoomScreen()
                 MainTab.Garden -> GardenScreen() 
