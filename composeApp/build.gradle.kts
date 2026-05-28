@@ -199,7 +199,7 @@ val macExtraPlistKeys: String
  */
 compose.desktop {
     application {
-        mainClass = "MainKt"
+        mainClass = "com.voc2048.sparkle_study.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe, TargetFormat.Pkg)
