@@ -8,6 +8,7 @@ import coil3.PlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.util.DebugLogger
+import kotlin.math.PI
 
 /**
  * 通用工具類，整合了時間、單位轉換、平台判斷、Coil 配置等功能。
@@ -78,5 +79,9 @@ object UtilsTools {
         return ImageRequest.Builder(context)
             .data(data)
             .build()
+    }
+
+    fun toRadians(degree: Number): Double {
+        return degree.toDouble() * PI / 180.0
     }
 }
