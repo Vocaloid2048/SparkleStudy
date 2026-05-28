@@ -1,6 +1,7 @@
 package com.voc2048.sparkle_study.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -18,6 +19,8 @@ import com.voc2048.sparkle_study.ui.components.SettingsItem
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.*
 import com.voc2048.sparkle_study.BuildKonfig
+import com.voc2048.sparkle_study.ui.screens.TimerSettings
+import com.voc2048.sparkle_study.ui.screens.TimerSwitchBehavior
 
 @Composable
 fun SettingsScreen() {
@@ -60,6 +63,34 @@ fun SettingsScreen() {
                     title = "通用設定",
                     onClick = { /* 通用設定 */ }
                 )
+            }
+        }
+
+        item {
+            SettingsGroup(title = "計時器設定") {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text("切換模式行為", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = TimerSettings.switchBehavior == TimerSwitchBehavior.CONFIRM,
+                            onClick = { TimerSettings.switchBehavior = TimerSwitchBehavior.CONFIRM }
+                        )
+                        Text("二次確認", modifier = Modifier.clickable { TimerSettings.switchBehavior = TimerSwitchBehavior.CONFIRM })
+                        
+                        RadioButton(
+                            selected = TimerSettings.switchBehavior == TimerSwitchBehavior.AUTO_CONTINUE,
+                            onClick = { TimerSettings.switchBehavior = TimerSwitchBehavior.AUTO_CONTINUE }
+                        )
+                        Text("自動繼續", modifier = Modifier.clickable { TimerSettings.switchBehavior = TimerSwitchBehavior.AUTO_CONTINUE })
+                        
+                        RadioButton(
+                            selected = TimerSettings.switchBehavior == TimerSwitchBehavior.PAUSE,
+                            onClick = { TimerSettings.switchBehavior = TimerSwitchBehavior.PAUSE }
+                        )
+                        Text("暫停", modifier = Modifier.clickable { TimerSettings.switchBehavior = TimerSwitchBehavior.PAUSE })
+                    }
+                }
             }
         }
 

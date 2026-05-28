@@ -32,13 +32,15 @@ import kotlin.random.Random
 
 @Composable
 fun FocusTimerProgress(
-    timeLeft: Int,
-    totalTime: Int,
+    displayTime: Int,
+    progress: Float,
     isRunning: Boolean,
     hazeState: HazeState,
     modifier: Modifier = Modifier,
     isReverse: Boolean = false,
-    needShadow: Boolean = false
+    needShadow: Boolean = false,
+    indicatorIcon: String = "🔥",
+    showText: Boolean = true
 ) {
     // 粒子數據類別
     data class SparkleParticle(
@@ -70,7 +72,7 @@ fun FocusTimerProgress(
     val particleError = scheme.error
     val density = androidx.compose.ui.platform.LocalDensity.current
 
-    LaunchedEffect(timeLeft, particleTick) {
+    LaunchedEffect(displayTime, particleTick) {
         if (isRunning) {
             val newParticles = (0..3).map {
                 SparkleParticle(
@@ -96,8 +98,6 @@ fun FocusTimerProgress(
         modifier = modifier.size(320.dp),
         contentAlignment = Alignment.Center
     ) {
-        val progress = timeLeft.toFloat() / totalTime.toFloat()
-        
         // isReverse = true (預設): 進度條隨時間減少而縮短 (從 100% 到 0%)
         // isReverse = false: 進度條隨時間減少而增長 (從 0% 到 100%)
         val sweepAngle = if (isReverse) {
@@ -154,13 +154,13 @@ fun FocusTimerProgress(
             }
         }
 
-        // 4. Indicator Emoji (🔥)
+        // 4. Indicator Emoji
         Box(modifier = Modifier.fillMaxSize()) {
             val radiusDp = (320.dp / 2) - 24.dp
             val indicatorAngle = if (isReverse) 270f - sweepAngle else 270f + sweepAngle
             val indicatorRadians = toRadians(indicatorAngle.toDouble())
             Text(
-                text = "🔥",
+                text = indicatorIcon,
                 fontSize = 28.sp,
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -172,47 +172,49 @@ fun FocusTimerProgress(
         }
 
         // 中央霧化計時面板
-        Box(
-            modifier = Modifier
-                .size(190.dp)
-                .clip(CircleShape)
-                .hazeEffectSparkle(hazeState) // 應用霧化
-                .background(scheme.surface.copy(alpha = 0.25f))
-                .border(1.5.dp, scheme.surface.copy(alpha = 0.4f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            val timerText = formatSecondsToTimerString(timeLeft)
-            
-            // 使用者要求：計時文字添加2dp的主題色+black.alpha(0.8f) 的border
-            Box(contentAlignment = Alignment.Center) {
-                val shadowColor = Color.Black.copy(alpha = 0.8f)
+        if (showText) {
+            Box(
+                modifier = Modifier
+                    .size(190.dp)
+                    .clip(CircleShape)
+                    .hazeEffectSparkle(hazeState) // 應用霧化
+                    .background(scheme.surface.copy(alpha = 0.25f))
+                    .border(1.5.dp, scheme.surface.copy(alpha = 0.4f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                val timerText = formatSecondsToTimerString(displayTime)
                 
-                // 模擬描邊 (上下左右偏移 2dp)
-                if(needShadow){
-                    listOf(
-                        Offset(-2f, -2f), Offset(2f, -2f),
-                        Offset(-2f, 2f), Offset(2f, 2f),
-                        Offset(0f, -2f), Offset(0f, 2f),
-                        Offset(-2f, 0f), Offset(2f, 0f)
-                    ).forEach { offset ->
-                        Text(
-                            text = timerText,
-                            fontSize = 44.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = shadowColor,
-                            letterSpacing = 2.sp,
-                            modifier = Modifier.offset(offset.x.dp, offset.y.dp)
-                        )
+                // 使用者要求：計時文字添加2dp的主題色+black.alpha(0.8f) 的border
+                Box(contentAlignment = Alignment.Center) {
+                    val shadowColor = Color.Black.copy(alpha = 0.8f)
+                    
+                    // 模擬描邊 (上下左右偏移 2dp)
+                    if(needShadow){
+                        listOf(
+                            Offset(-2f, -2f), Offset(2f, -2f),
+                            Offset(-2f, 2f), Offset(2f, 2f),
+                            Offset(0f, -2f), Offset(0f, 2f),
+                            Offset(-2f, 0f), Offset(2f, 0f)
+                        ).forEach { offset ->
+                            Text(
+                                text = timerText,
+                                fontSize = 44.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = shadowColor,
+                                letterSpacing = 2.sp,
+                                modifier = Modifier.offset(offset.x.dp, offset.y.dp)
+                            )
+                        }
                     }
-                }
 
-                Text(
-                    text = timerText,
-                    fontSize = 44.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = scheme.primary,
-                    letterSpacing = 2.sp
-                )
+                    Text(
+                        text = timerText,
+                        fontSize = 44.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = scheme.primary,
+                        letterSpacing = 2.sp
+                    )
+                }
             }
         }
     }

@@ -28,14 +28,14 @@ import kotlin.math.sin
 
 @Composable
 fun FocusTimerWater(
-    timeLeft: Int,
-    totalTime: Int,
+    displayTime: Int,
+    progress: Float,
     isRunning: Boolean,
     hazeState: HazeState,
     modifier: Modifier = Modifier,
-    isTimerWaving: Boolean = true
+    isTimerWaving: Boolean = true,
+    showText: Boolean = true
 ) {
-    val progress = timeLeft.toFloat() / totalTime.toFloat()
     val scheme = SparkleColorScheme
     val primaryColor = scheme.primary
 
@@ -81,11 +81,11 @@ fun FocusTimerWater(
                 .graphicsLayer(alpha = 0.3f)
         )
 
-        val timerText = formatSecondsToTimerString(timeLeft)
+        val timerText = formatSecondsToTimerString(displayTime)
         val waterLevelRatio = progress
 
         // 2. 倒數文字與光學扭曲 (如果 isTimerWaving 為 true，則放在水後方)
-        if (isTimerWaving) {
+        if (isTimerWaving && showText) {
             Box(
                 modifier = Modifier
                     .size(280.dp)
@@ -198,7 +198,7 @@ fun FocusTimerWater(
         }
 
         // 4. 倒數文字 (如果 isTimerWaving 為 false，則放在水前方，白色)
-        if (!isTimerWaving) {
+        if (!isTimerWaving && showText) {
             Text(
                 text = timerText,
                 fontSize = 54.sp,

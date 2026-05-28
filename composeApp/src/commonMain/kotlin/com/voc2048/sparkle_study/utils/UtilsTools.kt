@@ -18,12 +18,13 @@ object UtilsTools {
     // --- 時間與格式化相關 (Time & Formatting) ---
 
     /**
-     * 將秒數轉換為易讀的時間格式 (如 25:00)。
+     * 將秒數轉換為易讀的時間格式 (如 00:25:00)。
      */
     fun formatSecondsToTimerString(seconds: Int): String {
-        val m = seconds / 60
+        val h = seconds / 3600
+        val m = (seconds % 3600) / 60
         val s = seconds % 60
-        return "${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
+        return "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
     }
 
     /**
