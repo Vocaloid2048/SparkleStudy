@@ -85,6 +85,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.androidx.room.sqlite.wrapper)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -109,12 +110,11 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.composeIcons.feather)
             implementation(compose.materialIconsExtended)
-            implementation(libs.room.runtime)
-            implementation(libs.sqlite.bundled)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
-            implementation(libs.kotlinx.coroutines.test)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -296,7 +296,13 @@ compose.desktop {
 
 dependencies {
     debugImplementation(libs.compose.uiTooling)
+
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
 }
+
+
 
 
 compose.resources {
@@ -331,12 +337,4 @@ fun initGradleProperties(){
     properties["APP_VERSION_DESKTOP"] = appVersionDesktop
     properties["APP_VERSION_CODE"] = versionCodeFinal.toString()
     properties.store(file("../gradle.properties").outputStream(),null)
-}
-
-
-dependencies {
-    add("kspAndroid", libs.room.compiler)
-    add("kspIosArm64", libs.room.compiler)
-    add("kspIosSimulatorArm64", libs.room.compiler)
-    add("kspJvm", libs.room.compiler)
 }
