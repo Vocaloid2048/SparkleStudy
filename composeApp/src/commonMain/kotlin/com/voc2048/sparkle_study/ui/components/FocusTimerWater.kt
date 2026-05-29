@@ -25,11 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import files.Res
+import files.tomato
 import com.voc2048.sparkle_study.utils.SparkleColorScheme
 import com.voc2048.sparkle_study.utils.UtilsTools.formatSecondsToTimerString
 import dev.chrisbanes.haze.HazeState
 import com.voc2048.sparkle_study.utils.hazeEffectSparkle
-import files.tomato
 import kotlin.math.sin
 
 @Composable
@@ -300,14 +300,5 @@ private fun Color.mix(other: Color, amount: Float): Color {
         green = this.green * (1 - amount) + other.green * amount,
         blue = this.blue * (1 - amount) + other.blue * amount,
         alpha = this.alpha * (1 - amount) + other.alpha * amount
-    )
-}
-
-private fun Color.darken(factor: Float): Color {
-    return Color(
-        red = this.red * (1 - factor),
-        green = this.green * (1 - factor),
-        blue = this.blue * (1 - factor),
-        alpha = this.alpha
     )
 }

@@ -2,27 +2,27 @@ package com.voc2048.sparkle_study.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.foundation.Image
-import org.jetbrains.compose.resources.painterResource
-import files.Res
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,10 +31,11 @@ import com.voc2048.sparkle_study.utils.UtilsTools.formatSecondsToTimerString
 import com.voc2048.sparkle_study.utils.UtilsTools.toRadians
 import com.voc2048.sparkle_study.utils.hazeEffectSparkle
 import dev.chrisbanes.haze.HazeState
+import files.Res
 import files.tomato
+import org.jetbrains.compose.resources.painterResource
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.random.Random
 
 @Composable
 fun FocusTimerProgress(
@@ -49,58 +50,19 @@ fun FocusTimerProgress(
     showText: Boolean = true,
     showTomato: Boolean = false
 ) {
-    // 粒子數據類別
-    data class SparkleParticle(
-        val id: Int,
-        val xOffset: Float,
-        val yOffset: Float,
-        val size: Float,
-        val alpha: Float,
-        val color: Color,
-        val rotation: Float,
-        val shapeType: Int // 0: 圓形, 1: 菱形/星形
-    )
-
-    val infiniteTransition = rememberInfiniteTransition(label = "SparkleTransition")
-    val particleTick by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "ParticleTick"
-    )
-
-    var particles by remember { mutableStateOf(listOf<SparkleParticle>()) }
-
     val scheme = SparkleColorScheme
 
-    LaunchedEffect(displayTime, particleTick) {
-        // 暫時關閉火花粒子
-        /*
-        if (isRunning) {
-            val newParticles = (0..3).map {
-                SparkleParticle(
-                    id = Random.nextInt(),
-                    xOffset = (Random.nextFloat() - 0.5f) * with(density) { 45.dp.toPx() },
-                    yOffset = (Random.nextFloat() - 0.5f) * with(density) { 45.dp.toPx() },
-                    size = with(density) { Random.nextFloat() * 8.dp.toPx() + 4.dp.toPx() },
-                    alpha = Random.nextFloat() * 0.7f + 0.3f,
-                    color = if (Random.nextBoolean()) particleSecondary else particleError,
-                    rotation = Random.nextFloat() * 360f,
-                    shapeType = Random.nextInt(2)
-                )
-            }
-            particles = (newParticles + particles.map { it.copy(alpha = it.alpha * 0.8f, size = it.size * 0.95f) })
-                .filter { it.alpha > 0.1f }
-                .take(40)
-        } else {
-            particles = emptyList()
-        }
-        */
-        particles = emptyList()
-    }
+    // 使用 isRunning 來增加動態感：指示器縮放動畫
+    val infiniteTransition = rememberInfiniteTransition(label = "IndicatorPulse")
+    val indicatorScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (isRunning) 1.2f else 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Scale"
+    )
 
     Box(
         modifier = modifier.size(320.dp),
@@ -119,7 +81,7 @@ fun FocusTimerProgress(
             val radius = (size.width / 2) - 24.dp.toPx()
             val strokeWidth = 10.dp.toPx()
 
-            // 0. 繪製底色圓環 (參考使用者圖片風格，使用細線)
+            // 0. 繪製底色圓環
             drawCircle(
                 color = Color.White.copy(alpha = 0.3f),
                 radius = radius,
@@ -140,38 +102,9 @@ fun FocusTimerProgress(
                 size = Size(radius * 2, radius * 2),
                 topLeft = Offset(center.x - radius, center.y - radius)
             )
-
-            // 2. 計算 Indicator 指標座標 (位於 sweepAngle 結束處)
-            val indicatorAngle = if (isReverse) 270f - sweepAngle else 270f + sweepAngle
-            val indicatorRadians = toRadians(indicatorAngle.toDouble())
-            val indicatorX = center.x + radius * cos(indicatorRadians).toFloat()
-            val indicatorY = center.y + radius * sin(indicatorRadians).toFloat()
-
-            // 3. 動態渲染火花粒子
-            particles.forEach { particle ->
-                rotate(particle.rotation, Offset(indicatorX + particle.xOffset, indicatorY + particle.yOffset)) {
-                    if (particle.shapeType == 0) {
-                        drawCircle(
-                            color = particle.color.copy(alpha = particle.alpha),
-                            radius = particle.size / 2,
-                            center = Offset(indicatorX + particle.xOffset, indicatorY + particle.yOffset)
-                        )
-                    } else {
-                        val pSize = particle.size
-                        val path = Path().apply {
-                            moveTo(indicatorX + particle.xOffset, indicatorY + particle.yOffset - pSize)
-                            lineTo(indicatorX + particle.xOffset + pSize / 2, indicatorY + particle.yOffset)
-                            lineTo(indicatorX + particle.xOffset, indicatorY + particle.yOffset + pSize)
-                            lineTo(indicatorX + particle.xOffset - pSize / 2, indicatorY + particle.yOffset)
-                            close()
-                        }
-                        drawPath(path, particle.color.copy(alpha = particle.alpha))
-                    }
-                }
-            }
         }
 
-        // 4. Indicator Emoji
+        // 2. Indicator Emoji
         Box(modifier = Modifier.fillMaxSize()) {
             val radiusDp = (320.dp / 2) - 24.dp
             val indicatorAngle = if (isReverse) 270f - sweepAngle else 270f + sweepAngle
@@ -181,14 +114,16 @@ fun FocusTimerProgress(
                 fontSize = 28.sp,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(
-                        x = radiusDp * cos(indicatorRadians).toFloat(),
-                        y = radiusDp * sin(indicatorRadians).toFloat()
+                    .graphicsLayer(
+                        scaleX = indicatorScale,
+                        scaleY = indicatorScale,
+                        translationX = with(androidx.compose.ui.platform.LocalDensity.current) { (radiusDp * cos(indicatorRadians).toFloat()).toPx() },
+                        translationY = with(androidx.compose.ui.platform.LocalDensity.current) { (radiusDp * sin(indicatorRadians).toFloat()).toPx() }
                     )
             )
         }
 
-        // 蕃茄背景 (放在霧化層之下，使其更清晰且貼合邊框)
+        // 3. 蕃茄背景
         if (showTomato) {
             Box(contentAlignment = Alignment.Center) {
                 Image(
@@ -196,7 +131,6 @@ fun FocusTimerProgress(
                     contentDescription = null,
                     modifier = Modifier.size(260.dp).alpha(0.8f)
                 )
-                // 淺白色前景 overlay (在蕃茄上方，文字下方)
                 Box(
                     modifier = Modifier
                         .size(260.dp)
@@ -205,22 +139,20 @@ fun FocusTimerProgress(
             }
         }
 
-        // 中央面板
+        // 4. 中央面板
         if (showText) {
             Box(
                 modifier = Modifier
                     .size(190.dp)
                     .clip(CircleShape)
-                    .hazeEffectSparkle(hazeState), // 應用霧化
+                    .hazeEffectSparkle(hazeState),
                 contentAlignment = Alignment.Center
             ) {
                 val timerText = formatSecondsToTimerString(displayTime)
                 
-                // 使用者要求：計時文字添加2dp的主題色+black.alpha(0.8f) 的border
                 Box(contentAlignment = Alignment.Center) {
                     val shadowColor = Color.Black.copy(alpha = 0.8f)
                     
-                    // 模擬描邊 (上下左右偏移 2dp)
                     if(needShadow){
                         listOf(
                             Offset(-2f, -2f), Offset(2f, -2f),
@@ -243,7 +175,7 @@ fun FocusTimerProgress(
                         text = timerText,
                         fontSize = 44.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White, // 改為白色字體
+                        color = Color.White,
                         letterSpacing = 2.sp
                     )
                 }

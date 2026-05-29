@@ -6,7 +6,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -57,8 +56,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import files.Res
+import com.voc2048.sparkle_study.ui.components.ActionButton
 import com.voc2048.sparkle_study.ui.components.FocusTimerProgress
 import com.voc2048.sparkle_study.ui.components.FocusTimerWater
+import com.voc2048.sparkle_study.ui.components.NumberPickerSlot
 import com.voc2048.sparkle_study.utils.SparkleColorScheme
 import com.voc2048.sparkle_study.utils.hazeEffectSparkle
 import compose.icons.FeatherIcons
@@ -424,20 +425,18 @@ fun FocusTimerScreen() {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
                         ) {
                             if (timerMode == TimerMode.POMODORO) {
-                                NumberPickerSlot(value = pomodoroFocusMin, range = 1..120, unit = "分") { 
+                                NumberPickerSlot(value = pomodoroFocusMin, range = 1..120, unit = "分", modifier = Modifier.weight(1f)) { 
                                     pomodoroFocusMin = it
                                     pomodoroTimeLeft = it * 60
                                     pomodoroTotalTime = it * 60
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                NumberPickerSlot(value = pomodoroShortBreakMin, range = 1..30, unit = "休") { 
+                                NumberPickerSlot(value = pomodoroShortBreakMin, range = 1..30, unit = "休", modifier = Modifier.weight(1f)) { 
                                     pomodoroShortBreakMin = it 
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                NumberPickerSlot(value = pomodoroRounds, range = 1..10, unit = "輪") { 
+                                NumberPickerSlot(value = pomodoroRounds, range = 1..10, unit = "輪", modifier = Modifier.weight(1f)) { 
                                     pomodoroRounds = it 
                                 }
                             } else if (timerMode == TimerMode.COUNT_DOWN) {
@@ -445,17 +444,17 @@ fun FocusTimerScreen() {
                                 val m = (countDownTotalTime % 3600) / 60
                                 val s = countDownTotalTime % 60
                                 
-                                NumberPickerSlot(value = h, range = 0..23, unit = "時") { newH ->
+                                NumberPickerSlot(value = h, range = 0..23, unit = "時", modifier = Modifier.weight(1f)) { newH ->
                                     val total = newH * 3600 + m * 60 + s
                                     countDownTotalTime = total
                                     if(!countDownStarted) countDownTimeLeft = total
                                 }
-                                NumberPickerSlot(value = m, range = 0..59, unit = "分") { newM ->
+                                NumberPickerSlot(value = m, range = 0..59, unit = "分", modifier = Modifier.weight(1f)) { newM ->
                                     val total = h * 3600 + newM * 60 + s
                                     countDownTotalTime = total
                                     if(!countDownStarted) countDownTimeLeft = total
                                 }
-                                NumberPickerSlot(value = s, range = 0..59, unit = "秒") { newS ->
+                                NumberPickerSlot(value = s, range = 0..59, unit = "秒", modifier = Modifier.weight(1f)) { newS ->
                                     val total = h * 3600 + m * 60 + newS
                                     countDownTotalTime = total
                                     if(!countDownStarted) countDownTimeLeft = total
@@ -670,81 +669,6 @@ fun FocusTimerScreen() {
                 TextButton(onClick = { showResetConfirmDialog = false }) { Text("取消") }
             }
         )
-    }
-}
-
-@Composable
-fun NumberPickerSlot(
-    value: Int,
-    range: IntRange = 1..120,
-    unit: String = "",
-    onValueChange: (Int) -> Unit
-) {
-    val itemHeight = 50.dp // 增加高度以適應更大文字
-    val state = rememberLazyListState(initialFirstVisibleItemIndex = (value - range.first))
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(state.isScrollInProgress) {
-        if (!state.isScrollInProgress) {
-            val centerIndex = state.firstVisibleItemIndex
-            val newValue = range.first + centerIndex
-            if (newValue != value) {
-                onValueChange(newValue)
-            }
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .height(itemHeight * 3)
-            .width(60.dp), // 寬度一致，避免擠壓
-        contentAlignment = Alignment.Center
-    ) {
-        LazyColumn(
-            state = state,
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(vertical = itemHeight),
-            flingBehavior = rememberSnapFlingBehavior(lazyListState = state)
-        ) {
-            items(range.last - range.first + 1) { index ->
-                val num = range.first + index
-                val isSelected = num == value
-                
-                Box(
-                    modifier = Modifier
-                        .height(itemHeight)
-                        .fillMaxWidth()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            scope.launch {
-                                state.animateScrollToItem(index)
-                                onValueChange(num)
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = num.toString().padStart(2, '0'),
-                            fontSize = if (isSelected) 38.sp else 30.sp, // 文字更大
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.4f) // 改為白色
-                        )
-                        if (isSelected && unit.isNotEmpty()) {
-                            Text(
-                                text = unit,
-                                fontSize = 14.sp, // 文字更大
-                                color = Color.White, // 改為白色
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
