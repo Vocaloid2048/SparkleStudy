@@ -18,7 +18,13 @@ plugins {
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.no.arg)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
     id("com.codingfeline.buildkonfig").version("0.21.2")
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 
@@ -103,9 +109,12 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.composeIcons.feather)
             implementation(compose.materialIconsExtended)
+            implementation(libs.room.runtime)
+            implementation(libs.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -324,3 +333,10 @@ fun initGradleProperties(){
     properties.store(file("../gradle.properties").outputStream(),null)
 }
 
+
+dependencies {
+    add("kspAndroid", libs.room.compiler)
+    add("kspIosArm64", libs.room.compiler)
+    add("kspIosSimulatorArm64", libs.room.compiler)
+    add("kspJvm", libs.room.compiler)
+}
