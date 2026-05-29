@@ -233,17 +233,18 @@ fun FocusTimerWater(
             )
         }
 
-        // 5. 飲管 (更高、夾角更小、避開文字)
+        // 5. 飲管 (更高、避開文字)
         Canvas(modifier = Modifier.fillMaxSize()) {
             val centerX = size.width / 2
             val centerY = size.height / 2
             
             // 飲管路徑：從水缸內部出發，經過折角，指向螢幕外
-            val elbowX = centerX + 110.dp.toPx()
-            val elbowY = centerY - 140.dp.toPx()
+            // 調整起始點與折角座標，使其更偏向右上角，避開中央文字
+            val elbowX = centerX + 130.dp.toPx()
+            val elbowY = centerY - 160.dp.toPx()
 
             val strawPath = Path().apply {
-                moveTo(centerX + 60.dp.toPx(), centerY + 20.dp.toPx())
+                moveTo(centerX + 90.dp.toPx(), centerY - 40.dp.toPx())
                 lineTo(elbowX, elbowY)
                 lineTo(size.width + 100f, -50f)
             }
