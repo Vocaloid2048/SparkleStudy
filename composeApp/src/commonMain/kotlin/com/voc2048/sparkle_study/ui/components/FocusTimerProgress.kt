@@ -11,13 +11,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.foundation.Image
+import org.jetbrains.compose.resources.painterResource
+import files.Res
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +31,7 @@ import com.voc2048.sparkle_study.utils.UtilsTools.formatSecondsToTimerString
 import com.voc2048.sparkle_study.utils.UtilsTools.toRadians
 import com.voc2048.sparkle_study.utils.hazeEffectSparkle
 import dev.chrisbanes.haze.HazeState
+import files.tomato
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
@@ -40,7 +46,8 @@ fun FocusTimerProgress(
     isReverse: Boolean = false,
     needShadow: Boolean = false,
     indicatorIcon: String = "🔥",
-    showText: Boolean = true
+    showText: Boolean = true,
+    showTomato: Boolean = false
 ) {
     // 粒子數據類別
     data class SparkleParticle(
@@ -68,11 +75,10 @@ fun FocusTimerProgress(
     var particles by remember { mutableStateOf(listOf<SparkleParticle>()) }
 
     val scheme = SparkleColorScheme
-    val particleSecondary = scheme.secondary
-    val particleError = scheme.error
-    val density = androidx.compose.ui.platform.LocalDensity.current
 
     LaunchedEffect(displayTime, particleTick) {
+        // 暫時關閉火花粒子
+        /*
         if (isRunning) {
             val newParticles = (0..3).map {
                 SparkleParticle(
@@ -92,6 +98,8 @@ fun FocusTimerProgress(
         } else {
             particles = emptyList()
         }
+        */
+        particles = emptyList()
     }
 
     Box(
@@ -111,11 +119,20 @@ fun FocusTimerProgress(
             val radius = (size.width / 2) - 24.dp.toPx()
             val strokeWidth = 10.dp.toPx()
 
-            // 1. 繪製進度條 (主題色淡化 0.8f)
-            // isReverse = true: 逆時針縮短 (startAngle = 270, sweep = -sweepAngle)
-            // isReverse = false: 順時針增長 (startAngle = 270, sweep = sweepAngle)
+            // 0. 繪製底色圓環 (參考使用者圖片風格，使用細線)
+            drawCircle(
+                color = Color.White.copy(alpha = 0.3f),
+                radius = radius,
+                center = center,
+                style = Stroke(width = 1.5.dp.toPx())
+            )
+
+            // 1. 繪製進度條 (漸變色: error -> secondary -> primary)
             drawArc(
-                color = scheme.primary.copy(alpha = 0.8f),
+                brush = Brush.sweepGradient(
+                    colors = listOf(scheme.error, scheme.secondary, scheme.primary, scheme.error),
+                    center = center
+                ),
                 startAngle = 270f,
                 sweepAngle = if (isReverse) -sweepAngle else sweepAngle,
                 useCenter = false,
@@ -171,15 +188,30 @@ fun FocusTimerProgress(
             )
         }
 
-        // 中央霧化計時面板
+        // 蕃茄背景 (放在霧化層之下，使其更清晰且貼合邊框)
+        if (showTomato) {
+            Box(contentAlignment = Alignment.Center) {
+                Image(
+                    painter = painterResource(Res.drawable.tomato),
+                    contentDescription = null,
+                    modifier = Modifier.size(260.dp).alpha(0.8f)
+                )
+                // 淺白色前景 overlay (在蕃茄上方，文字下方)
+                Box(
+                    modifier = Modifier
+                        .size(260.dp)
+                        .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                )
+            }
+        }
+
+        // 中央面板
         if (showText) {
             Box(
                 modifier = Modifier
                     .size(190.dp)
                     .clip(CircleShape)
-                    .hazeEffectSparkle(hazeState) // 應用霧化
-                    .background(scheme.surface.copy(alpha = 0.25f))
-                    .border(1.5.dp, scheme.surface.copy(alpha = 0.4f), CircleShape),
+                    .hazeEffectSparkle(hazeState), // 應用霧化
                 contentAlignment = Alignment.Center
             ) {
                 val timerText = formatSecondsToTimerString(displayTime)
@@ -211,7 +243,7 @@ fun FocusTimerProgress(
                         text = timerText,
                         fontSize = 44.sp,
                         fontWeight = FontWeight.Bold,
-                        color = scheme.primary,
+                        color = Color.White, // 改為白色字體
                         letterSpacing = 2.sp
                     )
                 }

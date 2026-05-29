@@ -2,12 +2,15 @@ package com.voc2048.sparkle_study.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
@@ -20,10 +23,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.painterResource
+import files.Res
 import com.voc2048.sparkle_study.utils.SparkleColorScheme
 import com.voc2048.sparkle_study.utils.UtilsTools.formatSecondsToTimerString
 import dev.chrisbanes.haze.HazeState
 import com.voc2048.sparkle_study.utils.hazeEffectSparkle
+import files.tomato
 import kotlin.math.sin
 
 @Composable
@@ -34,7 +40,9 @@ fun FocusTimerWater(
     hazeState: HazeState,
     modifier: Modifier = Modifier,
     isTimerWaving: Boolean = true,
-    showText: Boolean = true
+    showText: Boolean = true,
+    isTimerTextBack: Boolean = false, // New parameter: True means in front
+    showTomato: Boolean = false
 ) {
     val scheme = SparkleColorScheme
     val primaryColor = scheme.primary
@@ -81,11 +89,28 @@ fun FocusTimerWater(
                 .graphicsLayer(alpha = 0.3f)
         )
 
+        // 蕃茄背景 (在水面之下，魚缸背景之上)
+        if (showTomato) {
+            Box(contentAlignment = Alignment.Center) {
+                Image(
+                    painter = painterResource(Res.drawable.tomato),
+                    contentDescription = null,
+                    modifier = Modifier.size(260.dp).alpha(0.8f)
+                )
+                // 淺白色前景 overlay (統一使用此效果)
+                Box(
+                    modifier = Modifier
+                        .size(260.dp)
+                        .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                )
+            }
+        }
+
         val timerText = formatSecondsToTimerString(displayTime)
         val waterLevelRatio = progress
 
-        // 2. 倒數文字與光學扭曲 (如果 isTimerWaving 為 true，則放在水後方)
-        if (isTimerWaving && showText) {
+        // 2. 倒數文字與光學扭曲 (如果 isTimerWaving 為 true 且 isTimerTextBack 為 false，則放在水後方)
+        if (isTimerWaving && showText && !isTimerTextBack) {
             Box(
                 modifier = Modifier
                     .size(280.dp)
@@ -109,7 +134,7 @@ fun FocusTimerWater(
                         text = timerText,
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = primaryColor,
+                        color = Color.White,
                         letterSpacing = 2.sp
                     )
                 }
@@ -137,7 +162,7 @@ fun FocusTimerWater(
                         text = timerText,
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = primaryColor.darken(0.3f),
+                        color = Color.White.copy(alpha = 0.8f),
                         letterSpacing = 2.sp
                     )
                 }
@@ -197,8 +222,8 @@ fun FocusTimerWater(
             }
         }
 
-        // 4. 倒數文字 (如果 isTimerWaving 為 false，則放在水前方，白色)
-        if (!isTimerWaving && showText) {
+        // 4. 倒數文字 (放在水前方，白色)
+        if (showText && (!isTimerWaving || isTimerTextBack)) {
             Text(
                 text = timerText,
                 fontSize = 54.sp,

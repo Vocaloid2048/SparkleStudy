@@ -3,42 +3,73 @@ package com.voc2048.sparkle_study.ui.screens
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.painterResource
+import files.Res
 import com.voc2048.sparkle_study.ui.components.FocusTimerProgress
 import com.voc2048.sparkle_study.ui.components.FocusTimerWater
 import com.voc2048.sparkle_study.utils.SparkleColorScheme
 import com.voc2048.sparkle_study.utils.hazeEffectSparkle
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
-import kotlinx.coroutines.delay
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Droplet
-import compose.icons.feathericons.Zap
 import compose.icons.feathericons.SkipForward
 import compose.icons.feathericons.Square
-import com.voc2048.sparkle_study.ui.components.AppDialog
+import compose.icons.feathericons.Zap
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
+import files.tomato
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -93,9 +124,6 @@ fun FocusTimerScreen() {
     var showSwitchConfirmDialog by remember { mutableStateOf(false) }
     var showResetConfirmDialog by remember { mutableStateOf(false) }
     var pendingMode by remember { mutableStateOf<TimerMode?>(null) }
-    
-    val showPomodoroSettings = remember { mutableStateOf(false) }
-    val showCountDownSettings = remember { mutableStateOf(false) }
 
     val quotes = remember {
         mapOf(
@@ -344,14 +372,14 @@ fun FocusTimerScreen() {
                 TimerMode.POMODORO -> {
                     val progress = if (pomodoroTotalTime > 0) pomodoroTimeLeft.toFloat() / pomodoroTotalTime else 1f
                     if (timerStyle == TimerStyle.WATER) {
-                        FocusTimerWater(displayTime = pomodoroTimeLeft, progress = progress, isRunning = pomodoroIsRunning, hazeState = hazeState, isTimerWaving = true, showText = showTimerText)
+                        FocusTimerWater(displayTime = pomodoroTimeLeft, progress = progress, isRunning = pomodoroIsRunning, hazeState = hazeState, isTimerWaving = true, showText = showTimerText, isTimerTextBack = true, showTomato = true)
                     } else {
-                        FocusTimerProgress(displayTime = pomodoroTimeLeft, progress = progress, isRunning = pomodoroIsRunning, hazeState = hazeState, isReverse = false, indicatorIcon = indicatorIcon, showText = showTimerText)
+                        FocusTimerProgress(displayTime = pomodoroTimeLeft, progress = progress, isRunning = pomodoroIsRunning, hazeState = hazeState, isReverse = false, indicatorIcon = indicatorIcon, showText = showTimerText, showTomato = true)
                     }
                 }
                 TimerMode.COUNT_UP -> {
                     if (timerStyle == TimerStyle.WATER) {
-                        FocusTimerWater(displayTime = countUpTime, progress = 0.8f, isRunning = countUpIsRunning, hazeState = hazeState, isTimerWaving = false, showText = true)
+                        FocusTimerWater(displayTime = countUpTime, progress = 0.8f, isRunning = countUpIsRunning, hazeState = hazeState, isTimerWaving = false, showText = true, isTimerTextBack = true)
                     } else {
                         FocusTimerProgress(displayTime = countUpTime, progress = 1f - (countUpTime % 3600) / 3600f, isRunning = countUpIsRunning, hazeState = hazeState, isReverse = false, indicatorIcon = indicatorIcon, showText = true)
                     }
@@ -359,34 +387,82 @@ fun FocusTimerScreen() {
                 TimerMode.COUNT_DOWN -> {
                     val progress = if (countDownTotalTime > 0) countDownTimeLeft.toFloat() / countDownTotalTime else 1f
                     if (timerStyle == TimerStyle.WATER) {
-                        FocusTimerWater(displayTime = countDownTimeLeft, progress = progress, isRunning = countDownIsRunning, hazeState = hazeState, isTimerWaving = true, showText = showTimerText)
+                        FocusTimerWater(displayTime = countDownTimeLeft, progress = progress, isRunning = countDownIsRunning, hazeState = hazeState, isTimerWaving = true, showText = showTimerText, isTimerTextBack = true)
                     } else {
                         FocusTimerProgress(displayTime = countDownTimeLeft, progress = progress, isRunning = countDownIsRunning, hazeState = hazeState, isReverse = false, indicatorIcon = indicatorIcon, showText = showTimerText)
                     }
                 }
             }
 
-            // 設定文字 Box
+            // 整合式時間選擇器 (取代原有的 Dialog)
             if (!showTimerText && timerMode != TimerMode.COUNT_UP) {
-                val settingsStr = if (timerMode == TimerMode.POMODORO) "$pomodoroFocusMin/$pomodoroShortBreakMin/$pomodoroRounds"
-                                 else {
-                                     val h = countDownTotalTime / 3600
-                                     val m = (countDownTotalTime % 3600) / 60
-                                     val s = countDownTotalTime % 60
-                                     "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
-                                 }
-                
                 Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White.copy(alpha = 0.6f))
-                        .clickable {
-                            if (timerMode == TimerMode.POMODORO) showPomodoroSettings.value = true
-                            else showCountDownSettings.value = true
-                        }
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.size(320.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = settingsStr, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = SparkleColorScheme.primary)
+                    if (timerMode == TimerMode.POMODORO) {
+                        // 蕃茄背景 (與計時中大小一致 260.dp, alpha 0.8)
+                        Box(contentAlignment = Alignment.Center) {
+                            Image(
+                                painter = painterResource(Res.drawable.tomato),
+                                contentDescription = null,
+                                modifier = Modifier.size(260.dp).alpha(0.8f)
+                            )
+                            // 淺白色前景 overlay (統一使用開始後的效果)
+                            Box(
+                                modifier = Modifier
+                                    .size(260.dp)
+                                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier.size(260.dp), // 與背景一致
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (timerMode == TimerMode.POMODORO) {
+                                NumberPickerSlot(value = pomodoroFocusMin, range = 1..120, unit = "分") { 
+                                    pomodoroFocusMin = it
+                                    pomodoroTimeLeft = it * 60
+                                    pomodoroTotalTime = it * 60
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                NumberPickerSlot(value = pomodoroShortBreakMin, range = 1..30, unit = "休") { 
+                                    pomodoroShortBreakMin = it 
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                NumberPickerSlot(value = pomodoroRounds, range = 1..10, unit = "輪") { 
+                                    pomodoroRounds = it 
+                                }
+                            } else if (timerMode == TimerMode.COUNT_DOWN) {
+                                val h = countDownTotalTime / 3600
+                                val m = (countDownTotalTime % 3600) / 60
+                                val s = countDownTotalTime % 60
+                                
+                                NumberPickerSlot(value = h, range = 0..23, unit = "時") { newH ->
+                                    val total = newH * 3600 + m * 60 + s
+                                    countDownTotalTime = total
+                                    if(!countDownStarted) countDownTimeLeft = total
+                                }
+                                NumberPickerSlot(value = m, range = 0..59, unit = "分") { newM ->
+                                    val total = h * 3600 + newM * 60 + s
+                                    countDownTotalTime = total
+                                    if(!countDownStarted) countDownTimeLeft = total
+                                }
+                                NumberPickerSlot(value = s, range = 0..59, unit = "秒") { newS ->
+                                    val total = h * 3600 + m * 60 + newS
+                                    countDownTotalTime = total
+                                    if(!countDownStarted) countDownTimeLeft = total
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -396,63 +472,139 @@ fun FocusTimerScreen() {
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 60.dp),
             contentAlignment = Alignment.Center
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(0.8f),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 重置
-                ActionButton(
-                    icon = FeatherIcons.Square,
-                    tint = SparkleColorScheme.error,
-                    hazeState = hazeState,
-                    onClick = { showResetConfirmDialog = true }
-                )
-                
-                // 開始/暫停
-                val isRunning = when(timerMode) {
-                    TimerMode.POMODORO -> pomodoroIsRunning
-                    TimerMode.COUNT_UP -> countUpIsRunning
-                    TimerMode.COUNT_DOWN -> countDownIsRunning
-                }
-                ActionButton(
-                    icon = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    tint = SparkleColorScheme.primary,
-                    hazeState = hazeState,
-                    isLarge = true,
+            val isRunning = when(timerMode) {
+                TimerMode.POMODORO -> pomodoroIsRunning
+                TimerMode.COUNT_UP -> countUpIsRunning
+                TimerMode.COUNT_DOWN -> countDownIsRunning
+            }
+            val isStarted = when(timerMode) {
+                TimerMode.POMODORO -> pomodoroStarted
+                TimerMode.COUNT_UP -> countUpTime > 0
+                TimerMode.COUNT_DOWN -> countDownStarted
+            }
+
+            if (!isRunning && !isStarted && timerMode != TimerMode.COUNT_UP) {
+                // 開始專注按鈕 (膠囊風格，與繼續按鈕一致)
+                Button(
                     onClick = {
                         when (timerMode) {
-                            TimerMode.POMODORO -> { pomodoroIsRunning = !pomodoroIsRunning; pomodoroStarted = true }
-                            TimerMode.COUNT_UP -> { countUpIsRunning = !countUpIsRunning }
-                            TimerMode.COUNT_DOWN -> { countDownIsRunning = !countDownIsRunning; countDownStarted = true }
+                            TimerMode.POMODORO -> { pomodoroIsRunning = true; pomodoroStarted = true }
+                            TimerMode.COUNT_DOWN -> { countDownIsRunning = true; countDownStarted = true }
+                            else -> {}
                         }
+                    },
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White.copy(alpha = 0.9f),
+                        contentColor = SparkleColorScheme.primary
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.5f).height(48.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (timerMode == TimerMode.POMODORO) "開始專注" else "開始計時",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                )
-                
-                // 跳過
-                ActionButton(
-                    icon = FeatherIcons.SkipForward,
-                    tint = if (timerMode == TimerMode.POMODORO) SparkleColorScheme.secondary else Color.Gray.copy(alpha = 0.5f),
-                    hazeState = hazeState,
-                    onClick = {
-                        if (timerMode == TimerMode.POMODORO) {
-                            if (pomodoroCurrentPhase < pomodoroRounds * 2 - 1) {
-                                saveProgress(TimerMode.POMODORO, pomodoroTotalTime - pomodoroTimeLeft)
-                                pomodoroCurrentPhase++
-                                pomodoroIsResting = pomodoroCurrentPhase % 2 != 0
-                                val nextMin = if (pomodoroIsResting) pomodoroShortBreakMin else pomodoroFocusMin
-                                pomodoroTimeLeft = nextMin * 60
-                                pomodoroTotalTime = nextMin * 60
-                                pomodoroIsRunning = true
-                                pomodoroStarted = true
-                            }
-                        } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("本計時器不支援跳過功能")
-                            }
-                        }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.9f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 重置 (膠囊風格)
+                    Button(
+                        onClick = { showResetConfirmDialog = true },
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.2f),
+                            contentColor = SparkleColorScheme.error
+                        ),
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        border = BorderStroke(1.dp, SparkleColorScheme.error.copy(alpha = 0.5f))
+                    ) {
+                        Icon(FeatherIcons.Square, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("重置", fontSize = 14.sp)
                     }
-                )
+                    
+                    // 開始/暫停 (膠囊風格)
+                    val isRunning = when(timerMode) {
+                        TimerMode.POMODORO -> pomodoroIsRunning
+                        TimerMode.COUNT_UP -> countUpIsRunning
+                        TimerMode.COUNT_DOWN -> countDownIsRunning
+                    }
+                    Button(
+                        onClick = {
+                            when (timerMode) {
+                                TimerMode.POMODORO -> { pomodoroIsRunning = !pomodoroIsRunning; pomodoroStarted = true }
+                                TimerMode.COUNT_UP -> { countUpIsRunning = !countUpIsRunning }
+                                TimerMode.COUNT_DOWN -> { countDownIsRunning = !countDownIsRunning; countDownStarted = true }
+                            }
+                        },
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.9f),
+                            contentColor = SparkleColorScheme.primary
+                        ),
+                        modifier = Modifier.weight(1.5f).height(48.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                    ) {
+                        Icon(if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(if (isRunning) "暫停" else "繼續", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                    
+                    // 跳過 (膠囊風格)
+                    Button(
+                        onClick = {
+                            if (timerMode == TimerMode.POMODORO) {
+                                if (pomodoroCurrentPhase < pomodoroRounds * 2 - 1) {
+                                    saveProgress(TimerMode.POMODORO, pomodoroTotalTime - pomodoroTimeLeft)
+                                    pomodoroCurrentPhase++
+                                    pomodoroIsResting = pomodoroCurrentPhase % 2 != 0
+                                    val nextMin = if (pomodoroIsResting) pomodoroShortBreakMin else pomodoroFocusMin
+                                    pomodoroTimeLeft = nextMin * 60
+                                    pomodoroTotalTime = nextMin * 60
+                                    pomodoroIsRunning = true
+                                    pomodoroStarted = true
+                                } else if (pomodoroCurrentPhase == pomodoroRounds * 2 - 1) {
+                                    // 最後一次休息跳過，直接完成
+                                    saveProgress(TimerMode.POMODORO, pomodoroTotalTime - pomodoroTimeLeft)
+                                    pomodoroIsRunning = false
+                                    pomodoroTimeLeft = 0
+                                    pomodoroIsResting = false
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("蕃茄鐘已完成！")
+                                    }
+                                }
+                            } else {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("不支援跳過")
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(24.dp),
+                        enabled = timerMode == TimerMode.POMODORO,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.2f),
+                            contentColor = SparkleColorScheme.secondary,
+                            disabledContainerColor = Color.White.copy(alpha = 0.05f),
+                            disabledContentColor = Color.Gray
+                        ),
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        border = BorderStroke(1.dp, SparkleColorScheme.secondary.copy(alpha = 0.5f))
+                    ) {
+                        Icon(FeatherIcons.SkipForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("跳過", fontSize = 14.sp)
+                    }
+                }
             }
         }
 
@@ -519,73 +671,86 @@ fun FocusTimerScreen() {
             }
         )
     }
-
-    AppDialog("設定番茄時間", hazeState, showPomodoroSettings) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            NumberPickerSlot("專注", pomodoroFocusMin) { pomodoroFocusMin = it; if(!pomodoroStarted) { pomodoroTimeLeft = it * 60; pomodoroTotalTime = it * 60 } }
-            NumberPickerSlot("短休", pomodoroShortBreakMin) { pomodoroShortBreakMin = it }
-            NumberPickerSlot("輪次", pomodoroRounds, 1..10) { pomodoroRounds = it }
-        }
-    }
-
-    AppDialog("設定倒計時", hazeState, showCountDownSettings) {
-        var h by remember { mutableStateOf(countDownTotalTime / 3600) }
-        var m by remember { mutableStateOf((countDownTotalTime % 3600) / 60) }
-        var s by remember { mutableStateOf(countDownTotalTime % 60) }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            NumberPickerSlot("時", h, 0..23) { h = it }
-            NumberPickerSlot("分", m, 0..59) { m = it }
-            NumberPickerSlot("秒", s, 0..59) { s = it }
-        }
-        LaunchedEffect(h, m, s) {
-            val total = h * 3600 + m * 60 + s
-            countDownTotalTime = total
-            if(!countDownStarted) countDownTimeLeft = total
-        }
-    }
 }
 
 @Composable
-fun ActionButton(icon: ImageVector, tint: Color, hazeState: HazeState, isLarge: Boolean = false, onClick: () -> Unit) {
-    val size = 64.dp // 統一大小
+fun NumberPickerSlot(
+    value: Int,
+    range: IntRange = 1..120,
+    unit: String = "",
+    onValueChange: (Int) -> Unit
+) {
+    val itemHeight = 50.dp // 增加高度以適應更大文字
+    val state = rememberLazyListState(initialFirstVisibleItemIndex = (value - range.first))
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(state.isScrollInProgress) {
+        if (!state.isScrollInProgress) {
+            val centerIndex = state.firstVisibleItemIndex
+            val newValue = range.first + centerIndex
+            if (newValue != value) {
+                onValueChange(newValue)
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
-            .size(size)
-            .clip(CircleShape)
-            .border(1.5.dp, tint.copy(alpha = 0.5f), CircleShape)
-            .hazeEffectSparkle(hazeState)
-            .background(SparkleColorScheme.background.copy(alpha = 0.4f))
-            .clickable { onClick() },
+            .height(itemHeight * 3)
+            .width(60.dp), // 寬度一致，避免擠壓
         contentAlignment = Alignment.Center
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(28.dp))
-    }
-}
-
-@Composable
-fun NumberPickerSlot(label: String, value: Int, range: IntRange = 1..120, onValueChange: (Int) -> Unit) {
-    val state = rememberLazyListState(initialFirstVisibleItemIndex = (value - range.first))
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(60.dp)) {
-        Text(label, fontSize = 12.sp, color = SparkleColorScheme.primary)
-        Box(modifier = Modifier.height(100.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-            LazyColumn(state = state, modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                items(range.last - range.first + 1) { index ->
-                    val num = range.first + index
-                    val isSelected = num == value
-                    Text(
-                        text = num.toString(),
-                        fontSize = if (isSelected) 20.sp else 16.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) SparkleColorScheme.primary else Color.Gray,
-                        modifier = Modifier.padding(vertical = 4.dp).clickable { onValueChange(num) }
-                    )
-                }
-            }
-            LaunchedEffect(state.isScrollInProgress) {
-                if (!state.isScrollInProgress) {
-                    onValueChange(range.first + state.firstVisibleItemIndex)
+        LazyColumn(
+            state = state,
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(vertical = itemHeight),
+            flingBehavior = rememberSnapFlingBehavior(lazyListState = state)
+        ) {
+            items(range.last - range.first + 1) { index ->
+                val num = range.first + index
+                val isSelected = num == value
+                
+                Box(
+                    modifier = Modifier
+                        .height(itemHeight)
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            scope.launch {
+                                state.animateScrollToItem(index)
+                                onValueChange(num)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = num.toString().padStart(2, '0'),
+                            fontSize = if (isSelected) 38.sp else 30.sp, // 文字更大
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.4f) // 改為白色
+                        )
+                        if (isSelected && unit.isNotEmpty()) {
+                            Text(
+                                text = unit,
+                                fontSize = 14.sp, // 文字更大
+                                color = Color.White, // 改為白色
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+@Preview
+fun FocusTimerScreenPreview(){
+    FocusTimerScreen()
+
 }
