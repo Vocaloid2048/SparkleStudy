@@ -13,8 +13,99 @@ class Preferences {
         const val NOTIFICATIONS_ENABLED = "notifications_enabled"
         const val USER_LEVEL = "user_level"
         const val USER_NAME = "user_name"
+        const val USER_ID = "user_id"
+
+        // Timer Settings (Constants/Defaults)
+        const val POMODORO_FOCUS_MIN = "pomodoro_focus_min"
+        const val POMODORO_BREAK_MIN = "pomodoro_break_min"
+        const val POMODORO_ROUNDS = "pomodoro_rounds"
+        const val COUNTDOWN_TOTAL_SECONDS = "countdown_total_seconds"
+        const val TIMER_MODE = "timer_mode"
+        const val TIMER_STYLE = "timer_style"
+        const val TIMER_SWITCH_BEHAVIOR = "timer_switch_behavior"
+
+        // Mode-Specific Progress (Current State)
+        const val POMODORO_CURRENT_SECONDS = "pomodoro_current_seconds"
+        const val POMODORO_CURRENT_PHASE = "pomodoro_current_phase"
+        const val POMODORO_IS_RESTING = "pomodoro_is_resting"
+        const val COUNTDOWN_CURRENT_SECONDS = "countdown_current_seconds"
+        const val COUNTUP_CURRENT_SECONDS = "countup_current_seconds"
+
+        // Global Active Session State
+        const val IS_ACTIVE_SESSION_RUNNING = "is_active_session_running"
+        const val LAST_ACTIVE_TIMESTAMP = "last_active_timestamp"
     }
 
+    // --- Core Identity ---
+    var userId: String
+        get() = settings.getString(Keys.USER_ID, "default_user")
+        set(value) = settings.putString(Keys.USER_ID, value)
+
+    var userName: String
+        get() = settings.getString(Keys.USER_NAME, "Sparkle User")
+        set(value) = settings.putString(Keys.USER_NAME, value)
+
+    // --- Configuration ---
+    var timerMode: String
+        get() = settings.getString(Keys.TIMER_MODE, "POMODORO")
+        set(value) = settings.putString(Keys.TIMER_MODE, value)
+
+    var timerStyle: String
+        get() = settings.getString(Keys.TIMER_STYLE, "SPARKLE")
+        set(value) = settings.putString(Keys.TIMER_STYLE, value)
+
+    var timerSwitchBehavior: String
+        get() = settings.getString(Keys.TIMER_SWITCH_BEHAVIOR, "CONFIRM")
+        set(value) = settings.putString(Keys.TIMER_SWITCH_BEHAVIOR, value)
+
+    // --- Timer Setup Defaults ---
+    var pomodoroFocusMin: Int
+        get() = settings.getInt(Keys.POMODORO_FOCUS_MIN, 25)
+        set(value) = settings.putInt(Keys.POMODORO_FOCUS_MIN, value)
+
+    var pomodoroBreakMin: Int
+        get() = settings.getInt(Keys.POMODORO_BREAK_MIN, 5)
+        set(value) = settings.putInt(Keys.POMODORO_BREAK_MIN, value)
+
+    var pomodoroRounds: Int
+        get() = settings.getInt(Keys.POMODORO_ROUNDS, 3)
+        set(value) = settings.putInt(Keys.POMODORO_ROUNDS, value)
+
+    var countdownTotalSeconds: Int
+        get() = settings.getInt(Keys.COUNTDOWN_TOTAL_SECONDS, 60 * 60)
+        set(value) = settings.putInt(Keys.COUNTDOWN_TOTAL_SECONDS, value)
+
+    // --- Real-time Progress (Per Mode) ---
+    var pomodoroCurrentSeconds: Int
+        get() = settings.getInt(Keys.POMODORO_CURRENT_SECONDS, 25 * 60)
+        set(value) = settings.putInt(Keys.POMODORO_CURRENT_SECONDS, value)
+
+    var pomodoroCurrentPhase: Int
+        get() = settings.getInt(Keys.POMODORO_CURRENT_PHASE, 0)
+        set(value) = settings.putInt(Keys.POMODORO_CURRENT_PHASE, value)
+
+    var pomodoroIsResting: Boolean
+        get() = settings.getBoolean(Keys.POMODORO_IS_RESTING, false)
+        set(value) = settings.putBoolean(Keys.POMODORO_IS_RESTING, value)
+
+    var countdownCurrentSeconds: Int
+        get() = settings.getInt(Keys.COUNTDOWN_CURRENT_SECONDS, 60 * 60)
+        set(value) = settings.putInt(Keys.COUNTDOWN_CURRENT_SECONDS, value)
+
+    var countupCurrentSeconds: Int
+        get() = settings.getInt(Keys.COUNTUP_CURRENT_SECONDS, 0)
+        set(value) = settings.putInt(Keys.COUNTUP_CURRENT_SECONDS, value)
+
+    // --- Runtime Sync ---
+    var isActiveSessionRunning: Boolean
+        get() = settings.getBoolean(Keys.IS_ACTIVE_SESSION_RUNNING, false)
+        set(value) = settings.putBoolean(Keys.IS_ACTIVE_SESSION_RUNNING, value)
+
+    var lastActiveTimestamp: Long
+        get() = settings.getLong(Keys.LAST_ACTIVE_TIMESTAMP, 0L)
+        set(value) = settings.putLong(Keys.LAST_ACTIVE_TIMESTAMP, value)
+
+    // --- Misc ---
     var appLanguage: String
         get() = settings.getString(Keys.APP_LANGUAGE, "en")
         set(value) = settings.putString(Keys.APP_LANGUAGE, value)
@@ -22,8 +113,4 @@ class Preferences {
     var notificationsEnabled: Boolean
         get() = settings.getBoolean(Keys.NOTIFICATIONS_ENABLED, true)
         set(value) = settings.putBoolean(Keys.NOTIFICATIONS_ENABLED, value)
-
-    var userName: String
-        get() = settings.getString(Keys.USER_NAME, "Sparkle User")
-        set(value) = settings.putString(Keys.USER_NAME, value)
 }

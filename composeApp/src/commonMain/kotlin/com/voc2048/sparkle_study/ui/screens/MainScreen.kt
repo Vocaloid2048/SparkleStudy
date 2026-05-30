@@ -8,6 +8,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.voc2048.sparkle_study.ui.viewmodels.StudyViewModel
+import com.voc2048.sparkle_study.ui.viewmodels.TimerSwitchBehavior
+import com.voc2048.sparkle_study.utils.Preferences
 import com.voc2048.sparkle_study.utils.SparkleColorScheme
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.*
@@ -25,8 +29,36 @@ sealed class MainTab(
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(viewModel: StudyViewModel = viewModel { StudyViewModel() }) {
+    val prefs = remember { Preferences() }
     var selectedTab by remember { mutableStateOf<MainTab>(MainTab.Dashboard) }
+    val isTimerRunning by viewModel.isRunning.collectAsState()
+    
+    var pendingTab by remember { mutableStateOf<MainTab?>(null) }
+    var showNavConfirmDialog by remember { mutableStateOf(false) }
+
+    // Init Global Settings
+    LaunchedEffect(Unit) {
+        TimerSettings.switchBehavior = TimerSwitchBehavior.valueOf(prefs.timerSwitchBehavior)
+    }
+
+    if (showNavConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showNavConfirmDialog = false },
+            title = { Text("暫停計時？") },
+            text = { Text("切換頁面將會暫停當前的計時。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.pauseTimer()
+                    pendingTab?.let { selectedTab = it }
+                    showNavConfirmDialog = false
+                }) { Text("確認") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNavConfirmDialog = false }) { Text("取消") }
+            }
+        )
+    }
 
     Scaffold(
         bottomBar = {
@@ -45,7 +77,19 @@ fun MainScreen() {
                 tabs.forEach { tab ->
                     NavigationBarItem(
                         selected = selectedTab == tab,
-                        onClick = { selectedTab = tab },
+                        onClick = { 
+                            if (isTimerRunning && selectedTab == MainTab.Timer && tab != MainTab.Timer) {
+                                if (TimerSettings.switchBehavior == TimerSwitchBehavior.CONFIRM) {
+                                    pendingTab = tab
+                                    showNavConfirmDialog = true
+                                } else {
+                                    viewModel.pauseTimer()
+                                    selectedTab = tab
+                                }
+                            } else {
+                                selectedTab = tab 
+                            }
+                        },
                         icon = {
                             Icon(
                                 if (selectedTab == tab) tab.selectedIcon else tab.unselectedIcon,
@@ -69,8 +113,8 @@ fun MainScreen() {
             when (selectedTab) {
                 MainTab.StudyRoom -> StudyRoomScreen()
                 MainTab.Garden -> GardenScreen() 
-                MainTab.Dashboard -> DashboardScreen()
-                MainTab.Timer -> FocusTimerScreen()
+                MainTab.Dashboard -> DashboardScreen(viewModel)
+                MainTab.Timer -> FocusTimerScreen(viewModel)
                 MainTab.Settings -> SettingsScreen()
             }
         }

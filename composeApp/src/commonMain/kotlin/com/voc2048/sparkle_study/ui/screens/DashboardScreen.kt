@@ -6,17 +6,26 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.voc2048.sparkle_study.ui.viewmodels.StudyViewModel
 
 @Composable
-fun DashboardScreen() {
+fun DashboardScreen(viewModel: StudyViewModel = viewModel { StudyViewModel() }) {
+    val user by viewModel.user.collectAsState()
+    
+    val focusHours = (user?.totalFocusMinutes ?: 0) / 60
+    val focusMins = (user?.totalFocusMinutes ?: 0) % 60
+    val timeDisplay = "${focusHours.toString().padStart(2, '0')}h ${focusMins.toString().padStart(2, '0')}m"
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -42,15 +51,15 @@ fun DashboardScreen() {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text("今日專注時間", color = Color.White.copy(alpha = 0.8f))
-                    Text("02h 45m", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("累計專注時間", color = Color.White.copy(alpha = 0.8f))
+                    Text(timeDisplay, fontSize = 48.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        StatItem("獲得代幣", "120")
-                        StatItem("獲得養分", "45")
-                        StatItem("達成目標", "80%")
+                        StatItem("持有代幣", user?.coins?.toString() ?: "0")
+                        StatItem("持有養分", user?.nutrient?.toString() ?: "0")
+                        StatItem("連擊天數", user?.loginStreak?.toString() ?: "1")
                     }
                 }
             }

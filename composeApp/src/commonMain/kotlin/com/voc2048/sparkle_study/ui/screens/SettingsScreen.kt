@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -13,17 +14,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.voc2048.sparkle_study.BuildKonfig
 import com.voc2048.sparkle_study.ui.components.AccountCard
 import com.voc2048.sparkle_study.ui.components.SettingsGroup
 import com.voc2048.sparkle_study.ui.components.SettingsItem
+import com.voc2048.sparkle_study.ui.viewmodels.TimerSwitchBehavior
+import com.voc2048.sparkle_study.utils.Preferences
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.*
-import com.voc2048.sparkle_study.BuildKonfig
-import com.voc2048.sparkle_study.ui.screens.TimerSettings
-import com.voc2048.sparkle_study.ui.screens.TimerSwitchBehavior
 
 @Composable
 fun SettingsScreen() {
+    val prefs = remember { Preferences() }
 
     LazyColumn(
         modifier = Modifier
@@ -44,7 +46,7 @@ fun SettingsScreen() {
 
         item {
             AccountCard(
-                username = "用戶名稱",
+                username = prefs.userName,
                 title = "資深專注者",
                 level = 12,
                 onClick = { /* 帳戶設定 */ }
@@ -74,21 +76,29 @@ fun SettingsScreen() {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(
                             selected = TimerSettings.switchBehavior == TimerSwitchBehavior.CONFIRM,
-                            onClick = { TimerSettings.switchBehavior = TimerSwitchBehavior.CONFIRM }
+                            onClick = { 
+                                TimerSettings.switchBehavior = TimerSwitchBehavior.CONFIRM
+                                prefs.timerSwitchBehavior = TimerSwitchBehavior.CONFIRM.name
+                            }
                         )
-                        Text("二次確認", modifier = Modifier.clickable { TimerSettings.switchBehavior = TimerSwitchBehavior.CONFIRM })
+                        Text("二次確認", modifier = Modifier.clickable { 
+                            TimerSettings.switchBehavior = TimerSwitchBehavior.CONFIRM
+                            prefs.timerSwitchBehavior = TimerSwitchBehavior.CONFIRM.name
+                        })
                         
-                        RadioButton(
-                            selected = TimerSettings.switchBehavior == TimerSwitchBehavior.AUTO_CONTINUE,
-                            onClick = { TimerSettings.switchBehavior = TimerSwitchBehavior.AUTO_CONTINUE }
-                        )
-                        Text("自動繼續", modifier = Modifier.clickable { TimerSettings.switchBehavior = TimerSwitchBehavior.AUTO_CONTINUE })
-                        
+                        Spacer(modifier = Modifier.width(16.dp))
+
                         RadioButton(
                             selected = TimerSettings.switchBehavior == TimerSwitchBehavior.PAUSE,
-                            onClick = { TimerSettings.switchBehavior = TimerSwitchBehavior.PAUSE }
+                            onClick = { 
+                                TimerSettings.switchBehavior = TimerSwitchBehavior.PAUSE
+                                prefs.timerSwitchBehavior = TimerSwitchBehavior.PAUSE.name
+                            }
                         )
-                        Text("暫停", modifier = Modifier.clickable { TimerSettings.switchBehavior = TimerSwitchBehavior.PAUSE })
+                        Text("暫停", modifier = Modifier.clickable { 
+                            TimerSettings.switchBehavior = TimerSwitchBehavior.PAUSE
+                            prefs.timerSwitchBehavior = TimerSwitchBehavior.PAUSE.name
+                        })
                     }
                 }
             }
