@@ -17,6 +17,17 @@ import com.voc2048.sparkle_study.types.DeviceInfo
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.okhttp.OkHttp
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.os.VibrationEffect
+import android.os.Vibrator
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import io.ktor.util.cio.writeChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.copyTo
@@ -32,7 +43,123 @@ import kotlin.system.exitProcess
  * THIS IS ANDROID-MAIN, so ONLY ACTUAL
  */
 
+private var mediaPlayer: MediaPlayer? = null
 
+actual fun vibrate(millis: Long, pattern: LongArray?) {
+    val context = platformContext.getContext() as Context
+    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    
+    // Check system ringer mode
+    if (audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT) return
+
+    val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+        vibratorManager.defaultVibrator
+    } else {
+        @Suppress("DEPRECATION")
+        context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    }
+
+    if (pattern != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(pattern, -1)
+        }
+    } else {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(millis, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(millis)
+        }
+    }
+}
+
+actual fun playSound(bytes: ByteArray) {
+    val context = platformContext.getContext() as Context
+    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    
+    // Respect system sound settings
+    if (audioManager.ringerMode != AudioManager.RINGER_MODE_NORMAL) return
+
+    try {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(object : android.media.MediaDataSource() {
+                override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {
+                    if (position >= bytes.size) return -1
+                    val remaining = bytes.size - position
+                    val length = if (size > remaining) remaining.toInt() else size
+                    System.arraycopy(bytes, position.toInt(), buffer, offset, length)
+                    return length
+                }
+
+                override fun getSize(): Long = bytes.size.toLong()
+                override fun close() {}
+            })
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build()
+            )
+            prepare()
+            start()
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+private const val CHANNEL_ID = "timer_notifications"
+
+actual fun showNotification(title: String, content: String) {
+    val context = platformContext.getContext() as Context
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "專注通知",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "計時器結束與提醒通知"
+        }
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    val activity = platformContext.getActivity() as ComponentActivity
+    val intent = Intent(context, activity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
+    
+    val pendingIntent = PendingIntent.getActivity(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    )
+
+    val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        .setSmallIcon(android.R.drawable.ic_dialog_info) 
+        .setContentTitle(title)
+        .setContentText(content)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setAutoCancel(true)
+        .setContentIntent(pendingIntent)
+        .build()
+
+    // 檢查通知權限 (Android 13+)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || 
+        ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+        notificationManager.notify(1, notification)
+    }
+}
 
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {
     val bitmap : ImageBitmap = BitmapFactory.decodeByteArray(byteArray,0,byteArray.size).asImageBitmap()

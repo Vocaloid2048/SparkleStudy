@@ -6,7 +6,11 @@ import com.voc2048.sparkle_study.database.AppDatabase
 import com.voc2048.sparkle_study.database.DatabaseHelper
 import com.voc2048.sparkle_study.database.FocusSessionEntity
 import com.voc2048.sparkle_study.database.UserEntity
+import com.voc2048.sparkle_study.playSound
+import com.voc2048.sparkle_study.showNotification
 import com.voc2048.sparkle_study.utils.Preferences
+import com.voc2048.sparkle_study.vibrate
+import files.Res
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -46,6 +50,17 @@ class StudyViewModel : ViewModel() {
     val isResting: StateFlow<Boolean> = _isResting.asStateFlow()
 
     private var timerJob: Job? = null
+
+    private fun playSoundEffect(fileName: String) {
+        viewModelScope.launch {
+            try {
+                val bytes = Res.readBytes("files/$fileName")
+                playSound(bytes)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     init {
         _timeLeft.value = getCurrentModeTimeFromPrefs()
@@ -91,6 +106,13 @@ class StudyViewModel : ViewModel() {
     fun startTimer() {
         if (_isRunning.value) return
         _isRunning.value = true
+        
+        // 開始專注時播放鈴聲與特定震動
+        if (_timerMode.value == TimerMode.POMODORO && !_isResting.value) {
+            playSoundEffect("start.mp3")
+            vibrate(0, longArrayOf(0, 200, 100, 200))
+        }
+
         saveTimerToPrefs()
         
         timerJob?.cancel()
@@ -134,15 +156,36 @@ class StudyViewModel : ViewModel() {
                 recordFocus(0, true, isPhaseComplete = !_isResting.value)
                 
                 _pomodoroPhase.value++
-                _isResting.value = _pomodoroPhase.value % 2 != 0
-                _timeLeft.value = (if (_isResting.value) prefs.pomodoroBreakMin else prefs.pomodoroFocusMin) * 60
-                pauseTimer()
+                val nextIsResting = _pomodoroPhase.value % 2 != 0
+                _isResting.value = nextIsResting
+                _timeLeft.value = (if (nextIsResting) prefs.pomodoroBreakMin else prefs.pomodoroFocusMin) * 60
+                
+                // 播放提醒與震動
+                if (nextIsResting) {
+                    playSoundEffect("finish.mp3")
+                    vibrate(500)
+                } else {
+                    playSoundEffect("start.mp3")
+                    // 兩次 200ms 震動，間隔 100ms: [等待時間, 震動, 停止, 震動]
+                    vibrate(0, longArrayOf(0, 200, 100, 200))
+                }
+                
+                // 自動繼續下一階段，不再呼叫 pauseTimer()
+                startTimer()
             } else {
                 recordFocus(0, true, isFullComplete = true)
                 stopTimer()
+                
+                playSoundEffect("finish.mp3")
+                vibrate(1000)
             }
         } else {
+            val mode = _timerMode.value
             stopTimer()
+            if (mode == TimerMode.COUNT_DOWN) {
+                playSoundEffect("finish.mp3")
+                vibrate(1000)
+            }
         }
         saveTimerToPrefs()
     }

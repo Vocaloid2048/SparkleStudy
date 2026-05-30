@@ -31,16 +31,64 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDefaults
 import platform.Foundation.NSUserDomainMask
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
+import platform.AVFoundation.AVAudioPlayer
+import platform.AudioToolbox.AudioServicesPlaySystemSound
+import platform.AudioToolbox.kSystemSoundID_Vibrate
+import platform.Foundation.*
 import platform.UIKit.UIApplication
 import platform.UIKit.UIDevice
 import platform.UIKit.UIInterfaceOrientationLandscapeLeft
 import platform.UIKit.UIInterfaceOrientationLandscapeRight
+import platform.UserNotifications.UNAuthorizationOptionAlert
+import platform.UserNotifications.UNAuthorizationOptionBadge
+import platform.UserNotifications.UNAuthorizationOptionSound
+import platform.UserNotifications.UNMutableNotificationContent
+import platform.UserNotifications.UNNotificationRequest
+import platform.UserNotifications.UNTimeIntervalNotificationTrigger
+import platform.UserNotifications.UNUserNotificationCenter
 import kotlin.system.exitProcess
 
 /**
  * This is the declaration kt file for specific-platform function
  * THIS IS NATIVE-MAIN, so ONLY ACTUAL (iOS)
  */
+
+private var iosPlayer: AVAudioPlayer? = null
+
+actual fun vibrate(millis: Long, pattern: LongArray?) {
+    // iOS simple vibration. Custom pattern is hard on iOS without CoreHaptics.
+    // Taptic Engine (UIImpactFeedbackGenerator) is better for modern iOS
+    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+}
+
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+actual fun playSound(bytes: ByteArray) {
+    val nsData = bytes.usePinned { pinned ->
+        NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
+    }
+    iosPlayer = AVAudioPlayer(data = nsData, error = null)
+    iosPlayer?.play()
+}
+
+actual fun showNotification(title: String, content: String) {
+    val center = UNUserNotificationCenter.currentNotificationCenter()
+    center.requestAuthorizationWithOptions(UNAuthorizationOptionAlert or UNAuthorizationOptionSound or UNAuthorizationOptionBadge) { granted, error ->
+        if (granted) {
+            val notificationContent = UNMutableNotificationContent().apply {
+                setTitle(title)
+                setBody(content)
+            }
+            // 立即發送 (1秒後)
+            val trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval(1.0, false)
+            val request = UNNotificationRequest.requestWithIdentifier("timer_notification", notificationContent, trigger)
+            center.addNotificationRequest(request, null)
+        }
+    }
+}
 
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {
     return Image.makeFromEncoded(byteArray).toComposeImageBitmap()
