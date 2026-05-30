@@ -89,17 +89,17 @@ class StudyViewModel : ViewModel() {
             val mode = _timerMode.value
             if (mode == TimerMode.COUNT_UP) {
                 _timeLeft.value = prefs.countupCurrentSeconds + diff
-                startTimer()
             } else {
                 val current = if (mode == TimerMode.POMODORO) prefs.pomodoroCurrentSeconds else prefs.countdownCurrentSeconds
                 val remaining = current - diff
                 if (remaining > 0) {
                     _timeLeft.value = remaining
-                    startTimer()
                 } else {
                     completeTimer()
                 }
             }
+            _isRunning.value = false
+            prefs.isActiveSessionRunning = false
         }
     }
 

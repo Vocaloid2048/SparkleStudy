@@ -34,6 +34,7 @@ class Preferences {
         // Global Active Session State
         const val IS_ACTIVE_SESSION_RUNNING = "is_active_session_running"
         const val LAST_ACTIVE_TIMESTAMP = "last_active_timestamp"
+        const val DAILY_GOAL_MINUTES = "daily_goal_minutes"
     }
 
     // --- Core Identity ---
@@ -113,4 +114,8 @@ class Preferences {
     var notificationsEnabled: Boolean
         get() = settings.getBoolean(Keys.NOTIFICATIONS_ENABLED, true)
         set(value) = settings.putBoolean(Keys.NOTIFICATIONS_ENABLED, value)
+
+    var dailyGoalMinutes: Int
+        get() = settings.getInt(Keys.DAILY_GOAL_MINUTES, 120)
+        set(value) = settings.putInt(Keys.DAILY_GOAL_MINUTES, value)
 }
