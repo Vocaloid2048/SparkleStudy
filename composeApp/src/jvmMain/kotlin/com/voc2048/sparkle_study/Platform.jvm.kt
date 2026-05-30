@@ -19,9 +19,62 @@ import io.ktor.utils.io.copyTo
 import okio.Path
 import okio.Path.Companion.toPath
 import org.jetbrains.skia.Image
+import java.awt.*
 import java.io.File
 import java.util.Locale
+import javax.sound.sampled.AudioSystem
 import kotlin.system.exitProcess
+
+/**
+ * This is the declaration kt file for specific-platform function
+ * THIS IS JVM-MAIN, so ONLY ACTUAL
+ */
+
+actual fun vibrate(millis: Long, pattern: LongArray?) {
+    // Desktop usually doesn't have vibration. Fallback to beep.
+    Toolkit.getDefaultToolkit().beep()
+}
+
+actual fun playSound(bytes: ByteArray) {
+    try {
+        val inputStream = java.io.ByteArrayInputStream(bytes)
+        val player = javazoom.jl.player.Player(inputStream)
+        
+        // Run in a separate thread to avoid blocking the main/UI thread
+        Thread {
+            try {
+                player.play()
+            } catch (e: Exception) {
+                println("Error during MP3 playback: ${e.message}")
+            } finally {
+                player.close()
+            }
+        }.start()
+    } catch (e: Exception) {
+        println("Error initializing MP3 player: ${e.message}")
+    }
+}
+
+actual fun showNotification(title: String, content: String) {
+    if (!SystemTray.isSupported()) return
+    
+    try {
+        val tray = SystemTray.getSystemTray()
+        val image = Toolkit.getDefaultToolkit().createImage("") // Empty image for icon
+        val trayIcon = TrayIcon(image, "Sparkle Study")
+        trayIcon.isImageAutoSize = true
+        tray.add(trayIcon)
+        trayIcon.displayMessage(title, content, TrayIcon.MessageType.INFO)
+        
+        // Remove icon after a delay
+        Thread {
+            Thread.sleep(5000)
+            tray.remove(trayIcon)
+        }.start()
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
 
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {
     val skiaImage = Image.makeFromEncoded(byteArray)

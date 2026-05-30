@@ -29,6 +29,7 @@ composeIcons = "1.1.1"
 room = "2.8.4"
 sqlite = "2.6.2"
 ksp="2.3.9"
+jlayer = "1.0.1"
 
 [libraries]
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
@@ -74,6 +75,7 @@ purchases-kmp = { module = "com.revenuecat.purchases:purchases-kmp", version.ref
 
 # Compose Icons
 composeIcons-feather = { module = "br.com.devsrsouza.compose.icons:feather", version.ref = "composeIcons" }
+jlayer = { module = "javazoom:jlayer", version.ref = "jlayer" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
