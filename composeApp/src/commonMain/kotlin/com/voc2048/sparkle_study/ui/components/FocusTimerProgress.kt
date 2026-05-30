@@ -143,7 +143,7 @@ fun FocusTimerProgress(
         if (showText) {
             Box(
                 modifier = Modifier
-                    .size(190.dp)
+                    .size(260.dp)
                     .clip(CircleShape)
                     .hazeEffectSparkle(hazeState),
                 contentAlignment = Alignment.Center
@@ -162,8 +162,8 @@ fun FocusTimerProgress(
                         ).forEach { offset ->
                             Text(
                                 text = timerText,
-                                fontSize = 44.sp,
-                                fontWeight = FontWeight.Bold,
+                                fontSize = 54.sp,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = shadowColor,
                                 letterSpacing = 2.sp,
                                 modifier = Modifier.offset(offset.x.dp, offset.y.dp)
@@ -173,8 +173,8 @@ fun FocusTimerProgress(
 
                     Text(
                         text = timerText,
-                        fontSize = 44.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 54.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
                         letterSpacing = 2.sp
                     )

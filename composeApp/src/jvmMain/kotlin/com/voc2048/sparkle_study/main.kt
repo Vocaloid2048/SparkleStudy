@@ -9,7 +9,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "SparkleStudy",
-        state = WindowState(width = 420.dp, height = 960.dp)
+        state = WindowState(width = 460.dp, height = 960.dp)
     ) {
         App(ContextFactory())
     }
