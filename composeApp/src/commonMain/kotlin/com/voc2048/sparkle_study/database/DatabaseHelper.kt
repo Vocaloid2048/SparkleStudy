@@ -13,6 +13,7 @@ object DatabaseHelper {
     private fun buildDatabase(): AppDatabase {
         val builder = getDatabaseBuilder()
         return builder
+            .fallbackToDestructiveMigration(true)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
             .build()

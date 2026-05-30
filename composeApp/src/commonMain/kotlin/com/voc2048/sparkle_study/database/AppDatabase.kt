@@ -13,7 +13,7 @@ import com.voc2048.sparkle_study.database.dao.*
         DailyTaskEntity::class,
         CoinTransactionEntity::class
     ],
-    version = 1
+    version = 2
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao

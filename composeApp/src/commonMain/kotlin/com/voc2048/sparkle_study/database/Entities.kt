@@ -12,6 +12,8 @@ data class UserEntity(
     val nutrient: Int,
     val loginStreak: Int,
     val totalFocusMinutes: Long,
+    val level: Int = 1,
+    val xp: Int = 0,
     val lastSyncAt: Long
 )
 
@@ -38,10 +40,13 @@ data class FocusSessionEntity(
 data class PlantEntity(
     @PrimaryKey val plantId: String,
     val typeName: String,
+    val planName: String = "預設計劃",
     val status: String, // SEED, GROWING, BLOOMING, DORMANT
     val growthProgress: Float,
     val plantedAt: Long,
-    val lastWatered: Long
+    val lastWatered: Long,
+    val targetDays: Int = 30,
+    val currentDay: Int = 1
 )
 
 @Entity(tableName = "daily_tasks")
