@@ -45,3 +45,24 @@ expect fun getAppSpecificDirectory(): okio.Path
 expect suspend fun ByteReadChannel.writeToFile(filepath: String)
 
 expect fun exitApp(): Unit
+
+// --- New Platform Utilities ---
+
+/**
+ * Vibrate the device.
+ * @param millis Duration in milliseconds (for simple vibration)
+ * @param pattern Optional list of (duration, pause) pairs in milliseconds for custom patterns
+ */
+expect fun vibrate(millis: Long, pattern: LongArray? = null)
+
+/**
+ * Play a sound using raw bytes.
+ */
+expect fun playSound(bytes: ByteArray)
+
+/**
+ * Show a local notification.
+ * @param title Notification title
+ * @param content Notification content
+ */
+expect fun showNotification(title: String, content: String)
