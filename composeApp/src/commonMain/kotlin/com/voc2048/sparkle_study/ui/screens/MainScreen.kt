@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.voc2048.sparkle_study.ui.viewmodels.StudyViewModel
 import com.voc2048.sparkle_study.ui.viewmodels.TimerSwitchBehavior
@@ -36,6 +38,13 @@ fun MainScreen(viewModel: StudyViewModel = viewModel { StudyViewModel() }) {
     
     var pendingTab by remember { mutableStateOf<MainTab?>(null) }
     var showNavConfirmDialog by remember { mutableStateOf(false) }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        viewModel.onAppBackgrounded()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        viewModel.onAppForegrounded()
+    }
 
     // Init Global Settings
     LaunchedEffect(Unit) {

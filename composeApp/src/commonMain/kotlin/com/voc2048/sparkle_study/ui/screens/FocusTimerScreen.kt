@@ -231,7 +231,7 @@ fun FocusTimerScreen(viewModel: StudyViewModel = viewModel { StudyViewModel() })
         // Timer Display
         Box(contentAlignment = Alignment.Center) {
             val indicatorIcon = if (timerMode == TimerMode.POMODORO && isResting) "🍵" else "🔥"
-            val showTimerText = isStarted || isRunning
+            val showTimerText = isStarted || isRunning || timerMode == TimerMode.COUNT_UP
 
             val totalTimeForProgress = when(timerMode) {
                 TimerMode.POMODORO -> if (isResting) pomodoroShortBreakMin * 60 else pomodoroFocusMin * 60
@@ -299,7 +299,7 @@ fun FocusTimerScreen(viewModel: StudyViewModel = viewModel { StudyViewModel() })
 
         // Buttons
         Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 60.dp), contentAlignment = Alignment.Center) {
-            if (!isRunning && !isStarted && timerMode != TimerMode.COUNT_UP) {
+            if (!isRunning && !isStarted && (timerMode == TimerMode.POMODORO || timerMode == TimerMode.COUNT_DOWN)) {
                 Button(
                     onClick = { viewModel.startTimer() },
                     shape = RoundedCornerShape(24.dp),
@@ -318,9 +318,9 @@ fun FocusTimerScreen(viewModel: StudyViewModel = viewModel { StudyViewModel() })
                     Button(
                         onClick = { showResetConfirmDialog = true },
                         shape = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f), contentColor = SparkleColorScheme.error),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f), contentColor = SparkleColorScheme.onSurface),
                         modifier = Modifier.weight(1f).height(48.dp),
-                        border = BorderStroke(1.dp, SparkleColorScheme.error.copy(alpha = 0.5f))
+                        border = BorderStroke(1.dp, SparkleColorScheme.onSurface.copy(alpha = 0.3f))
                     ) {
                         Icon(FeatherIcons.Square, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
