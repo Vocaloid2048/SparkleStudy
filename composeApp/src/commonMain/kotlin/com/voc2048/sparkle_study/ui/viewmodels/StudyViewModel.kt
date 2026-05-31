@@ -8,6 +8,11 @@ import com.voc2048.sparkle_study.database.FocusSessionEntity
 import com.voc2048.sparkle_study.database.UserEntity
 import com.voc2048.sparkle_study.playSound
 import com.voc2048.sparkle_study.showNotification
+import com.voc2048.sparkle_study.stopTimerService
+import com.voc2048.sparkle_study.updateTimerService
+import com.voc2048.sparkle_study.isUserDistracted
+import com.voc2048.sparkle_study.TimerEvent
+import com.voc2048.sparkle_study.TimerEventBus
 import com.voc2048.sparkle_study.utils.Preferences
 import com.voc2048.sparkle_study.vibrate
 import files.Res
@@ -15,6 +20,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
 enum class TimerMode {
@@ -51,6 +59,12 @@ class StudyViewModel : ViewModel() {
 
     private var timerJob: Job? = null
 
+    private var backgroundStartTime: Long = 0
+    private var isBackgrounded = false
+    private var wasDistracted = false
+    private var isWarningShown30s = false
+    private var isWarningShown1m = false
+
     private fun playSoundEffect(fileName: String) {
         viewModelScope.launch {
             try {
@@ -71,6 +85,16 @@ class StudyViewModel : ViewModel() {
             }
         }
         restoreTimerState()
+
+        viewModelScope.launch {
+            TimerEventBus.events.collect { event ->
+                when (event) {
+                    TimerEvent.PAUSE -> pauseTimer()
+                    TimerEvent.RESUME -> startTimer()
+                    TimerEvent.SKIP -> skipPhase()
+                }
+            }
+        }
     }
 
     private fun getCurrentModeTimeFromPrefs(): Int {
@@ -84,7 +108,7 @@ class StudyViewModel : ViewModel() {
     private fun restoreTimerState() {
         if (prefs.isActiveSessionRunning) {
             val now = Clock.System.now().toEpochMilliseconds()
-            val diff = ((now - prefs.lastActiveTimestamp) / 1000L).toInt()
+            val diff = ((now - prefs.lastActiveTimestamp) / 1000).toInt()
             
             val mode = _timerMode.value
             if (mode == TimerMode.COUNT_UP) {
@@ -107,8 +131,16 @@ class StudyViewModel : ViewModel() {
         if (_isRunning.value) return
         _isRunning.value = true
         
-        // 開始專注時播放鈴聲與特定震動
-        if (_timerMode.value == TimerMode.POMODORO && !_isResting.value) {
+        isWarningShown30s = false
+        isWarningShown1m = false
+
+        // 開始計時時播放鈴聲與特定震動
+        if (_timerMode.value == TimerMode.POMODORO) {
+            if (!_isResting.value) {
+                playSoundEffect("start.mp3")
+                vibrate(0, longArrayOf(0, 200, 100, 200))
+            }
+        } else {
             playSoundEffect("start.mp3")
             vibrate(0, longArrayOf(0, 200, 100, 200))
         }
@@ -131,6 +163,21 @@ class StudyViewModel : ViewModel() {
                 }
                 saveTimerToPrefs()
                 
+                if (isBackgrounded || isUserDistracted()) {
+                    updateTimerService(
+                        timeLeft = _timeLeft.value,
+                        totalTime = getCurrentInitialTime(),
+                        mode = _timerMode.value.name,
+                        phase = _pomodoroPhase.value,
+                        isResting = _isResting.value,
+                        isRunning = _isRunning.value
+                    )
+                } else {
+                    stopTimerService()
+                }
+
+                handleBackgroundCheck()
+
                 // Reward every minute (based on initial set time or elapsed)
                 if (_timeLeft.value > 0 && 
                     (if (_timerMode.value == TimerMode.COUNT_UP) _timeLeft.value % 60 == 0 
@@ -170,7 +217,8 @@ class StudyViewModel : ViewModel() {
                     vibrate(0, longArrayOf(0, 200, 100, 200))
                 }
                 
-                // 自動繼續下一階段，不再呼叫 pauseTimer()
+                // 重置執行狀態並自動繼續下一階段
+                _isRunning.value = false
                 startTimer()
             } else {
                 recordFocus(0, true, isFullComplete = true)
@@ -182,7 +230,7 @@ class StudyViewModel : ViewModel() {
         } else {
             val mode = _timerMode.value
             stopTimer()
-            if (mode == TimerMode.COUNT_DOWN) {
+            if (mode == TimerMode.COUNT_DOWN || mode == TimerMode.COUNT_UP) {
                 playSoundEffect("finish.mp3")
                 vibrate(1000)
             }
@@ -194,6 +242,19 @@ class StudyViewModel : ViewModel() {
         _isRunning.value = false
         timerJob?.cancel()
         saveTimerToPrefs()
+        
+        if (isBackgrounded || isUserDistracted()) {
+            updateTimerService(
+                timeLeft = _timeLeft.value,
+                totalTime = getCurrentInitialTime(),
+                mode = _timerMode.value.name,
+                phase = _pomodoroPhase.value,
+                isResting = _isResting.value,
+                isRunning = false
+            )
+        } else {
+            stopTimerService()
+        }
     }
 
     fun stopTimer() {
@@ -201,6 +262,7 @@ class StudyViewModel : ViewModel() {
         timerJob?.cancel()
         resetCurrentModeProgress()
         saveTimerToPrefs()
+        stopTimerService()
     }
 
     private fun resetCurrentModeProgress() {
@@ -328,6 +390,104 @@ class StudyViewModel : ViewModel() {
                     )
                 )
             }
+        }
+    }
+
+    // --- Background Logic ---
+
+    fun onAppBackgrounded() {
+        isBackgrounded = true
+        backgroundStartTime = Clock.System.now().toEpochMilliseconds()
+    }
+
+    fun onAppForegrounded() {
+        isBackgrounded = false
+        wasDistracted = false
+        backgroundStartTime = 0
+        isWarningShown30s = false
+        isWarningShown1m = false
+        stopTimerService()
+    }
+
+    private fun handleBackgroundCheck() {
+        if (!isBackgrounded) return
+        
+        val currentlyDistracted = isUserDistracted()
+        
+        // 如果目前是關屏或鎖定，更新標記並跳過檢查
+        if (currentlyDistracted) {
+            wasDistracted = true
+            return
+        }
+        
+        // 如果剛從鎖定/關屏狀態解鎖，重置背景計時起點，給予完整寬限期
+        if (wasDistracted) {
+            backgroundStartTime = Clock.System.now().toEpochMilliseconds()
+            wasDistracted = false
+            // 同時重置警告標記，確保解鎖後能再次觸發（如果需要）
+            isWarningShown30s = false
+            isWarningShown1m = false
+        }
+        
+        val elapsed = (Clock.System.now().toEpochMilliseconds() - backgroundStartTime) / 1000
+        
+        if (elapsed >= 60 && !isWarningShown1m) {
+            isWarningShown1m = true
+            deductCoinForDistraction()
+            pauseTimer()
+        } else if (elapsed >= 30 && !isWarningShown30s) {
+            isWarningShown30s = true
+            // 30s 提醒：震動 200ms 三次
+            vibrate(0, longArrayOf(0, 200, 100, 200, 100, 200))
+            
+            pauseTimer()
+            
+            // 手動更新一次 Service 通知狀態為已暫停
+            updateTimerService(
+                timeLeft = _timeLeft.value,
+                totalTime = getCurrentInitialTime(),
+                mode = _timerMode.value.name,
+                phase = _pomodoroPhase.value,
+                isResting = _isResting.value,
+                isRunning = false
+            )
+            
+            showNotification("計時已暫停", "你在後台待太久了，專注計時已自動暫停。")
+        }
+    }
+
+    private fun deductCoinForDistraction() {
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+        if (prefs.lastDeductionDate != today) {
+            prefs.lastDeductionDate = today
+            prefs.deductedCountToday = 0
+        }
+
+        if (prefs.deductedCountToday < 5) {
+            prefs.deductedCountToday++
+            viewModelScope.launch {
+                val userId = _user.value?.id ?: prefs.userId
+                db.userDao().earnCoins(
+                    userId = userId,
+                    amount = -1,
+                    type = "PENALTY",
+                    description = "後台運行過久扣除代幣",
+                    refId = null,
+                    transactionDao = db.coinTransactionDao()
+                )
+                // Update local user state
+                _user.value?.let { 
+                    _user.value = it.copy(coins = it.coins - 1)
+                }
+            }
+            stopTimerService()
+            showNotification(
+                "專注中斷提醒", 
+                "別離開太久喔！代幣已扣除 1 枚 (今日已扣: ${prefs.deductedCountToday}/5)。"
+            )
+        } else {
+            stopTimerService()
+            showNotification("計時已暫停", "你在後台待太久了，請回到 App 繼續專注。")
         }
     }
 }

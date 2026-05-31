@@ -35,6 +35,8 @@ class Preferences {
         const val IS_ACTIVE_SESSION_RUNNING = "is_active_session_running"
         const val LAST_ACTIVE_TIMESTAMP = "last_active_timestamp"
         const val DAILY_GOAL_MINUTES = "daily_goal_minutes"
+        const val DEDUCTED_COUNT_TODAY = "deducted_count_today"
+        const val LAST_DEDUCTION_DATE = "last_deduction_date"
     }
 
     // --- Core Identity ---
@@ -118,4 +120,12 @@ class Preferences {
     var dailyGoalMinutes: Int
         get() = settings.getInt(Keys.DAILY_GOAL_MINUTES, 120)
         set(value) = settings.putInt(Keys.DAILY_GOAL_MINUTES, value)
+
+    var deductedCountToday: Int
+        get() = settings.getInt(Keys.DEDUCTED_COUNT_TODAY, 0)
+        set(value) = settings.putInt(Keys.DEDUCTED_COUNT_TODAY, value)
+
+    var lastDeductionDate: String
+        get() = settings.getString(Keys.LAST_DEDUCTION_DATE, "")
+        set(value) = settings.putString(Keys.LAST_DEDUCTION_DATE, value)
 }
