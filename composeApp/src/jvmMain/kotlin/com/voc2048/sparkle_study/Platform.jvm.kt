@@ -76,6 +76,23 @@ actual fun showNotification(title: String, content: String) {
     }
 }
 
+actual fun updateTimerService(
+    timeLeft: Int,
+    totalTime: Int,
+    mode: String,
+    phase: Int,
+    isResting: Boolean,
+    isRunning: Boolean
+) {
+    // Not implemented for JVM
+}
+
+actual fun stopTimerService() {
+    // Not implemented for JVM
+}
+
+actual fun isUserDistracted(): Boolean = false
+
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {
     val skiaImage = Image.makeFromEncoded(byteArray)
     return skiaImage.toComposeImageBitmap()

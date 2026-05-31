@@ -20,10 +20,12 @@ import io.ktor.client.engine.okhttp.OkHttp
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.KeyguardManager
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.core.app.NotificationCompat
@@ -146,7 +148,8 @@ actual fun showNotification(title: String, content: String) {
     )
 
     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setSmallIcon(android.R.drawable.ic_dialog_info) 
+        .setSmallIcon(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) com.voc2048.sparkle_study.R.drawable.app_icon_monet else com.voc2048.sparkle_study.R.drawable.app_icon_round)
+        .setColor(0xFF59B292.toInt())
         .setContentTitle(title)
         .setContentText(content)
         .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -159,6 +162,49 @@ actual fun showNotification(title: String, content: String) {
         ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
         notificationManager.notify(1, notification)
     }
+}
+
+actual fun updateTimerService(
+    timeLeft: Int,
+    totalTime: Int,
+    mode: String,
+    phase: Int,
+    isResting: Boolean,
+    isRunning: Boolean
+) {
+    val context = platformContext.getContext() as Context
+    val intent = Intent(context, TimerService::class.java).apply {
+        putExtra(TimerService.EXTRA_TIME_LEFT, timeLeft)
+        putExtra(TimerService.EXTRA_TOTAL_TIME, totalTime)
+        putExtra(TimerService.EXTRA_MODE, mode)
+        putExtra(TimerService.EXTRA_PHASE, phase)
+        putExtra(TimerService.EXTRA_IS_RESTING, isResting)
+        putExtra(TimerService.EXTRA_IS_RUNNING, isRunning)
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        context.startForegroundService(intent)
+    } else {
+        context.startService(intent)
+    }
+}
+
+actual fun stopTimerService() {
+    val context = platformContext.getContext() as Context
+    val intent = Intent(context, TimerService::class.java).apply {
+        action = TimerService.ACTION_STOP
+    }
+    context.startService(intent)
+}
+
+actual fun isUserDistracted(): Boolean {
+    val context = platformContext.getContext() as Context
+    val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+    val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+    
+    val isScreenOff = !powerManager.isInteractive
+    val isLocked = keyguardManager.isKeyguardLocked
+    
+    return isScreenOff || isLocked
 }
 
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {

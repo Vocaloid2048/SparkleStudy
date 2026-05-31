@@ -90,6 +90,23 @@ actual fun showNotification(title: String, content: String) {
     }
 }
 
+actual fun updateTimerService(
+    timeLeft: Int,
+    totalTime: Int,
+    mode: String,
+    phase: Int,
+    isResting: Boolean,
+    isRunning: Boolean
+) {
+    // Not implemented for iOS yet
+}
+
+actual fun stopTimerService() {
+    // Not implemented for iOS yet
+}
+
+actual fun isUserDistracted(): Boolean = false
+
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {
     return Image.makeFromEncoded(byteArray).toComposeImageBitmap()
 }

@@ -66,3 +66,25 @@ expect fun playSound(bytes: ByteArray)
  * @param content Notification content
  */
 expect fun showNotification(title: String, content: String)
+
+/**
+ * Start or update the foreground timer service.
+ */
+expect fun updateTimerService(
+    timeLeft: Int,
+    totalTime: Int,
+    mode: String,
+    phase: Int,
+    isResting: Boolean,
+    isRunning: Boolean
+)
+
+/**
+ * Stop the foreground timer service.
+ */
+expect fun stopTimerService()
+
+/**
+ * Check if the user is currently distracted (screen off or device locked).
+ */
+expect fun isUserDistracted(): Boolean
