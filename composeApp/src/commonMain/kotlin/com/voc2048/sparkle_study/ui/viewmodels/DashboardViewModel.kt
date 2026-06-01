@@ -26,7 +26,11 @@ class DashboardViewModel : ViewModel() {
     private val prefs = Preferences()
 
     val user: StateFlow<UserEntity?> = userDao.getUser()
-        .onEach { checkDailyLogin(it) }
+        .onEach { 
+            if (it != null && !isLoginChecking) {
+                checkDailyLogin(it)
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val activePlant: StateFlow<PlantEntity?> = plantDao.getAllPlants()
@@ -42,6 +46,15 @@ class DashboardViewModel : ViewModel() {
 
     private val _isWeeklyMode = MutableStateFlow(false) 
     val isWeeklyMode: StateFlow<Boolean> = _isWeeklyMode.asStateFlow()
+
+    private val _showTimeTamperDialog = MutableStateFlow(false)
+    val showTimeTamperDialog: StateFlow<Boolean> = _showTimeTamperDialog.asStateFlow()
+
+    private var isLoginChecking = false
+
+    fun dismissTimeTamperDialog() {
+        _showTimeTamperDialog.value = false
+    }
 
     fun toggleChartMode() {
         _isWeeklyMode.value = !_isWeeklyMode.value
@@ -91,84 +104,103 @@ class DashboardViewModel : ViewModel() {
     }
 
     private fun checkDailyLogin(user: UserEntity?) {
-        if (user == null) return
+        if (user == null || isLoginChecking) return
+        isLoginChecking = true
         
         viewModelScope.launch {
-            val networkTime = UtilsTools.getNetworkTime()
-            val currentSystemTime = Clock.System.now().toEpochMilliseconds()
-            val currentUptime = getUptimeMillis()
-            
-            // 優先使用網路時間進行校驗
-            val verifiedTime = if (networkTime != null) {
-                // 如果網路時間與系統時間落差大於 5 分鐘，以網路時間為準
-                if (kotlin.math.abs(networkTime - currentSystemTime) > 300000) {
-                    println("系統時鐘與網路不符，使用網路時間校準。")
-                    networkTime
+            try {
+                val networkTime = UtilsTools.getNetworkTime()
+                val currentSystemTime = Clock.System.now().toEpochMilliseconds()
+                val currentUptime = getUptimeMillis()
+                
+                // 優先使用網路時間進行校驗
+                val verifiedTime = if (networkTime != null) {
+                    if (kotlin.math.abs(networkTime - currentSystemTime) > 300000) {
+                        println("系統時鐘與網路不符，使用網路時間校準。")
+                        networkTime
+                    } else {
+                        currentSystemTime
+                    }
                 } else {
+                    if (prefs.lastSystemTime > 0 && prefs.lastUptime > 0) {
+                        val systemDelta = currentSystemTime - prefs.lastSystemTime
+                        val uptimeDelta = currentUptime - prefs.lastUptime
+                        
+                        if (currentUptime > prefs.lastUptime) {
+                            if (systemDelta < -600000 || (systemDelta - uptimeDelta) > 600000) {
+                                println("偵測到系統時鐘可能被手動更改！暫停獎勵發放。")
+                                _showTimeTamperDialog.value = true
+                                isLoginChecking = false // 允許修正後重新檢查
+                                return@launch
+                            }
+                        }
+                    }
                     currentSystemTime
                 }
-            } else {
-                // 網路不可用時，退而求其次使用 Uptime 本地檢查
-                if (prefs.lastSystemTime > 0 && prefs.lastUptime > 0) {
-                    val systemDelta = currentSystemTime - prefs.lastSystemTime
-                    val uptimeDelta = currentUptime - prefs.lastUptime
+
+                val today = Instant.fromEpochMilliseconds(verifiedTime)
+                    .toLocalDateTime(currentSystemDefault()).date.toString()
+
+                // 二次檢查：防止在網路請求期間已經有其他地方更新了日期
+                if (prefs.lastLoginDate == today) {
+                    return@launch
+                }
+
+                // 立即記錄最後同步時間
+                prefs.lastSystemTime = currentSystemTime
+                prefs.lastUptime = currentUptime
+                
+                val lastDate = prefs.lastLoginDate
+                // ！！！注意：必須在執行寫入資料庫前更新 lastLoginDate，防止併發重複領取
+                prefs.lastLoginDate = today
+                
+                var newStreak = user.loginStreak
+                if (lastDate.isNotEmpty()) {
+                    val lastLocalDate = LocalDate.parse(lastDate)
+                    val todayDate = LocalDate.parse(today)
+                    val daysDiff = lastLocalDate.daysUntil(todayDate)
                     
-                    if (currentUptime > prefs.lastUptime) {
-                        if (systemDelta < -600000 || (systemDelta - uptimeDelta) > 600000) {
-                            println("偵測到系統時鐘可能被手動更改！暫停獎勵發放。")
+                    when {
+                        daysDiff == 1 -> newStreak++
+                        daysDiff > 1 -> newStreak = 1
+                        daysDiff < 0 -> {
+                            // 偵測到時間倒流 (Time Travel Backwards)
+                            println("偵測到日期倒流，不更新連續天數。")
+                            _showTimeTamperDialog.value = true
+                            // 回滾日期記錄，強制使用者修正
+                            prefs.lastLoginDate = lastDate 
                             return@launch
                         }
                     }
-                }
-                currentSystemTime
-            }
-
-            // 更新最後記錄的時間戳
-            prefs.lastSystemTime = currentSystemTime
-            prefs.lastUptime = currentUptime
-            
-            val today = Instant.fromEpochMilliseconds(verifiedTime)
-                .toLocalDateTime(currentSystemDefault()).date.toString()
-
-            if (prefs.lastLoginDate == today) return@launch
-
-            val lastDate = prefs.lastLoginDate
-            prefs.lastLoginDate = today
-            
-            var newStreak = user.loginStreak
-            if (lastDate.isNotEmpty()) {
-                val lastLocalDate = LocalDate.parse(lastDate)
-                val todayDate = LocalDate.parse(today)
-                val daysDiff = lastLocalDate.daysUntil(todayDate)
-                
-                if (daysDiff == 1) {
-                    newStreak++
-                } else if (daysDiff > 1) {
+                } else {
                     newStreak = 1
                 }
-            } else {
-                newStreak = 1
+
+                // Award coins based on streak (cycle of 7)
+                val rewards = listOf(5, 10, 5, 15, 5, 20, 50)
+                val rewardIndex = (newStreak - 1) % 7
+                val rewardAmount = rewards[rewardIndex]
+
+                // 執行獎勵發放 (一次性操作)
+                userDao.earnCoins(
+                    userId = user.id,
+                    amount = rewardAmount,
+                    type = "DAILY_LOGIN",
+                    description = "每日登入獎勵 (第 $newStreak 天)",
+                    refId = today,
+                    transactionDao = transactionDao
+                )
+
+                userDao.insertOrUpdateUser(user.copy(
+                    loginStreak = newStreak,
+                    coins = user.coins + rewardAmount,
+                    lastSyncAt = verifiedTime
+                ))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                // 不重置 isLoginChecking，確保當次生命週期只跑一次
             }
-
-            // Award coins based on streak (cycle of 7)
-            val rewards = listOf(5, 10, 5, 15, 5, 20, 50)
-            val rewardIndex = (newStreak - 1) % 7
-            val rewardAmount = rewards[rewardIndex]
-
-            userDao.earnCoins(
-                userId = user.id,
-                amount = rewardAmount,
-                type = "DAILY_LOGIN",
-                description = "每日登入獎勵 (第 $newStreak 天)",
-                refId = today,
-                transactionDao = transactionDao
-            )
-
-            userDao.insertOrUpdateUser(user.copy(
-                loginStreak = newStreak,
-                coins = user.coins + rewardAmount,
-                lastSyncAt = verifiedTime
-            ))
         }
     }
 

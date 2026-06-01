@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalFlorist
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,6 +41,7 @@ fun DashboardScreen(
     val tasks by dashboardViewModel.todayTasks.collectAsState()
     val hourlyDist by dashboardViewModel.hourlyDistribution.collectAsState()
     val isWeeklyMode by dashboardViewModel.isWeeklyMode.collectAsState()
+    val showTamperDialog by dashboardViewModel.showTimeTamperDialog.collectAsState()
     
     val h = todayMinutes / 60
     val m = todayMinutes % 60
@@ -192,6 +194,41 @@ fun DashboardScreen(
                 )
             }
         }
+    }
+
+    if (showTamperDialog) {
+        AlertDialog(
+            onDismissRequest = { dashboardViewModel.dismissTimeTamperDialog() },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Timer,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("偵測到時間異常", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Text(
+                    "系統偵測到您的手機時間與實際不符。為了保持獎勵機制的公平性，請確保系統時間設定為「自動設定」，否則將無法領取每日登入獎勵。",
+                    lineHeight = 22.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { dashboardViewModel.dismissTimeTamperDialog() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("我知道了")
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        )
     }
 }
 
