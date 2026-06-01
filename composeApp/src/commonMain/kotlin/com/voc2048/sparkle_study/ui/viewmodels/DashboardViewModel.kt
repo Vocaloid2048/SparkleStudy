@@ -11,6 +11,8 @@ import com.voc2048.sparkle_study.database.UserEntity
 import com.voc2048.sparkle_study.utils.Preferences
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
+import com.voc2048.sparkle_study.getUptimeMillis
+import com.voc2048.sparkle_study.utils.UtilsTools
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
 
@@ -90,10 +92,46 @@ class DashboardViewModel : ViewModel() {
 
     private fun checkDailyLogin(user: UserEntity?) {
         if (user == null) return
-        val today = getTodayKey()
-        if (prefs.lastLoginDate == today) return
-
+        
         viewModelScope.launch {
+            val networkTime = UtilsTools.getNetworkTime()
+            val currentSystemTime = Clock.System.now().toEpochMilliseconds()
+            val currentUptime = getUptimeMillis()
+            
+            // 優先使用網路時間進行校驗
+            val verifiedTime = if (networkTime != null) {
+                // 如果網路時間與系統時間落差大於 5 分鐘，以網路時間為準
+                if (kotlin.math.abs(networkTime - currentSystemTime) > 300000) {
+                    println("系統時鐘與網路不符，使用網路時間校準。")
+                    networkTime
+                } else {
+                    currentSystemTime
+                }
+            } else {
+                // 網路不可用時，退而求其次使用 Uptime 本地檢查
+                if (prefs.lastSystemTime > 0 && prefs.lastUptime > 0) {
+                    val systemDelta = currentSystemTime - prefs.lastSystemTime
+                    val uptimeDelta = currentUptime - prefs.lastUptime
+                    
+                    if (currentUptime > prefs.lastUptime) {
+                        if (systemDelta < -600000 || (systemDelta - uptimeDelta) > 600000) {
+                            println("偵測到系統時鐘可能被手動更改！暫停獎勵發放。")
+                            return@launch
+                        }
+                    }
+                }
+                currentSystemTime
+            }
+
+            // 更新最後記錄的時間戳
+            prefs.lastSystemTime = currentSystemTime
+            prefs.lastUptime = currentUptime
+            
+            val today = Instant.fromEpochMilliseconds(verifiedTime)
+                .toLocalDateTime(currentSystemDefault()).date.toString()
+
+            if (prefs.lastLoginDate == today) return@launch
+
             val lastDate = prefs.lastLoginDate
             prefs.lastLoginDate = today
             
@@ -129,7 +167,7 @@ class DashboardViewModel : ViewModel() {
             userDao.insertOrUpdateUser(user.copy(
                 loginStreak = newStreak,
                 coins = user.coins + rewardAmount,
-                lastSyncAt = Clock.System.now().toEpochMilliseconds()
+                lastSyncAt = verifiedTime
             ))
         }
     }

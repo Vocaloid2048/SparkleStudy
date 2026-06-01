@@ -88,3 +88,9 @@ expect fun stopTimerService()
  * Check if the user is currently distracted (screen off or device locked).
  */
 expect fun isUserDistracted(): Boolean
+
+/**
+ * Get the system uptime in milliseconds (time since boot).
+ * This is monotonic and unaffected by system clock changes.
+ */
+expect fun getUptimeMillis(): Long

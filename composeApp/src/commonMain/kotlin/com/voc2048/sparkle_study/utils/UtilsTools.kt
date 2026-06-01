@@ -8,12 +8,45 @@ import coil3.PlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.util.DebugLogger
+import com.voc2048.sparkle_study.getLocalHttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.PI
 
 /**
  * 通用工具類，整合了時間、單位轉換、平台判斷、Coil 配置等功能。
  */
 object UtilsTools {
+    
+    /**
+     * 從網路獲取真實的 Unix 時間戳 (UTC 毫秒)。
+     * 使用 TimeAPI.io 作為來源。
+     */
+    suspend fun getNetworkTime(): Long? {
+        return try {
+            val client = getLocalHttpClient { }
+            // 使用 timeapi.io 獲取台北時間
+            val response = client.get("https://timeapi.io/api/time/current/zone?timeZone=Asia/Hong_Kong")
+            val jsonBody = response.bodyAsText()
+            val json = Json.parseToJsonElement(jsonBody).jsonObject
+            
+            // 解析 dateTime 字串 (例如: "2023-10-25T14:30:45.1234567")
+            val dateTimeStr = json["dateTime"]?.jsonPrimitive?.content ?: return null
+            
+            // 轉換為 Instant 並獲取毫秒數 (指定時區為 Asia/Hong_Kong)
+            val localDateTime = LocalDateTime.parse(dateTimeStr)
+            localDateTime.toInstant(TimeZone.of("Asia/Hong_Kong")).toEpochMilliseconds()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     // --- 時間與格式化相關 (Time & Formatting) ---
 

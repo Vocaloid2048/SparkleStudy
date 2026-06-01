@@ -107,6 +107,8 @@ actual fun stopTimerService() {
 
 actual fun isUserDistracted(): Boolean = false
 
+actual fun getUptimeMillis(): Long = (NSProcessInfo.processInfo.systemUptime * 1000).toLong()
+
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {
     return Image.makeFromEncoded(byteArray).toComposeImageBitmap()
 }

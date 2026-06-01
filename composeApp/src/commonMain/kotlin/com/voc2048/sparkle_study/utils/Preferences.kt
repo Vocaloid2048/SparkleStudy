@@ -35,6 +35,8 @@ class Preferences {
         const val IS_ACTIVE_SESSION_RUNNING = "is_active_session_running"
         const val LAST_ACTIVE_TIMESTAMP = "last_active_timestamp"
         const val DAILY_GOAL_MINUTES = "daily_goal_minutes"
+        const val LAST_SYSTEM_TIME = "last_system_time"
+        const val LAST_UPTIME = "last_uptime"
         const val DEDUCTED_COUNT_TODAY = "deducted_count_today"
         const val LAST_DEDUCTION_DATE = "last_deduction_date"
         const val LAST_LOGIN_DATE = "last_login_date"
@@ -121,6 +123,14 @@ class Preferences {
     var dailyGoalMinutes: Int
         get() = settings.getInt(Keys.DAILY_GOAL_MINUTES, 120)
         set(value) = settings.putInt(Keys.DAILY_GOAL_MINUTES, value)
+
+    var lastSystemTime: Long
+        get() = settings.getLong(Keys.LAST_SYSTEM_TIME, 0L)
+        set(value) = settings.putLong(Keys.LAST_SYSTEM_TIME, value)
+
+    var lastUptime: Long
+        get() = settings.getLong(Keys.LAST_UPTIME, 0L)
+        set(value) = settings.putLong(Keys.LAST_UPTIME, value)
 
     var deductedCountToday: Int
         get() = settings.getInt(Keys.DEDUCTED_COUNT_TODAY, 0)

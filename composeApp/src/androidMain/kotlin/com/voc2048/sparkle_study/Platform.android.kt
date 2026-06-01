@@ -207,6 +207,8 @@ actual fun isUserDistracted(): Boolean {
     return isScreenOff || isLocked
 }
 
+actual fun getUptimeMillis(): Long = android.os.SystemClock.elapsedRealtime()
+
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {
     val bitmap : ImageBitmap = BitmapFactory.decodeByteArray(byteArray,0,byteArray.size).asImageBitmap()
     bitmap.prepareToDraw()

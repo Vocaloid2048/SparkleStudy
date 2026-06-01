@@ -93,6 +93,8 @@ actual fun stopTimerService() {
 
 actual fun isUserDistracted(): Boolean = false
 
+actual fun getUptimeMillis(): Long = System.nanoTime() / 1_000_000
+
 actual fun getImageBitmapByByteArray(byteArray: ByteArray): ImageBitmap {
     val skiaImage = Image.makeFromEncoded(byteArray)
     return skiaImage.toComposeImageBitmap()
