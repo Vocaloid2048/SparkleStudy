@@ -1,6 +1,8 @@
 package com.voc2048.sparkle_study.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -77,37 +79,115 @@ fun TopStatsBar(user: UserEntity?) {
 }
 
 @Composable
-fun TaskItem(task: DailyTaskEntity, onClaim: () -> Unit) {
+fun TaskItem(
+    task: DailyTaskEntity, 
+    isChallengeFinished: Boolean,
+    onClaim: () -> Unit
+) {
     val icon = when(task.taskType) {
-        "WATER" -> Icons.Default.LocalFlorist
-        "BOTTLE" -> Icons.Default.Mail
+        "GARDEN_WORK", "WATER" -> Icons.Default.LocalFlorist
+        "BOTTLE_SEND", "BOTTLE" -> Icons.Default.Mail
+        "SOCIAL_EMOJI" -> Icons.Default.EmojiEmotions
+        "POMO_CYCLE" -> Icons.Default.Update
+        "QUOTE_CLICK" -> Icons.Default.AutoAwesome
         else -> Icons.Default.Timer
     }
     val label = when(task.taskType) {
-        "WATER" -> "園丁任務：灌溉花卉"
-        "BOTTLE" -> "暖心任務：發送漂流瓶"
-        else -> "深度任務：專注 > 60分"
+        "GARDEN_WORK", "WATER" -> "灌溉與施肥"
+        "BOTTLE_SEND", "BOTTLE" -> "發送漂流瓶"
+        "SOCIAL_EMOJI" -> "在自修室點讚"
+        "POMO_CYCLE" -> "完成番茄鐘"
+        "QUOTE_CLICK" -> "點擊靈感金句"
+        else -> "累積專注 60 分鐘"
+    }
+    val unit = when(task.taskType) {
+        "FOCUS_60" -> "分鐘"
+        else -> "次"
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = Modifier.width(180.dp).height(170.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (task.isClaimed) MaterialTheme.colorScheme.primaryContainer 
+            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        ),
+        border = if (task.currentProgress >= task.targetValue && !task.isClaimed && !isChallengeFinished) 
+            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)) else null
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, fontSize = 14.sp)
-            LinearProgressIndicator(
-                progress = { task.currentProgress.toFloat() / task.targetValue },
-                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text("${task.currentProgress}/${task.targetValue}", fontSize = 12.sp, color = Color.Gray)
-        
-        if (task.currentProgress >= task.targetValue && !task.isClaimed) {
-            Button(onClick = onClaim, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp), modifier = Modifier.height(28.dp)) {
-                Text("領取", fontSize = 10.sp)
+        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // 1. 大圖標
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(if (task.isClaimed) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.background.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        icon, 
+                        contentDescription = null, 
+                        tint = if (task.isClaimed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, 
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(10.dp))
+                
+                // 2. 標題
+                Text(
+                    label, 
+                    fontSize = 16.sp, 
+                    fontWeight = FontWeight.Bold, 
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    color = if (task.isClaimed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+                
+                // 3. 進度與狀態文字
+                if (task.isClaimed) {
+                    Text("✅ 已領取獎勵", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                } else if (isChallengeFinished) {
+                    Text("每日挑戰已經完成", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                } else {
+                    Text(
+                        "${task.currentProgress} / ${task.targetValue} $unit", 
+                        fontSize = 14.sp, 
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        "獎勵: 10 🪙", 
+                        fontSize = 14.sp, 
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+            
+            // 4. 領取按鈕 (僅在未達成 3 任務且該任務完成時顯示)
+            if (task.currentProgress >= task.targetValue && !task.isClaimed && !isChallengeFinished) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .clickable { onClaim() },
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Text(
+                        "領取", 
+                        fontSize = 12.sp, 
+                        fontWeight = FontWeight.Bold, 
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     }

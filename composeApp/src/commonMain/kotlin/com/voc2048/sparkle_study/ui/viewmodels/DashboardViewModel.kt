@@ -38,7 +38,7 @@ class DashboardViewModel : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val todayTasks: StateFlow<List<DailyTaskEntity>> = taskDao.getTasksForDate(getTodayKey())
-        .onEach { if (it.isEmpty()) initDailyTasks() }
+        .onEach { if (it.size < 6) initDailyTasks() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val dailyGoalMinutes: StateFlow<Int> = MutableStateFlow(prefs.dailyGoalMinutes)
@@ -94,13 +94,25 @@ class DashboardViewModel : ViewModel() {
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0 to 0)
 
     private fun getTodayKey(): String {
-        val now = Clock.System.now().toLocalDateTime(currentSystemDefault()).date
-        return "${now.year}-${(now.month.ordinal + 1).toString().padStart(2, '0')}-${now.dayOfMonth.toString().padStart(2, '0')}"
+        val now = Clock.System.now().toLocalDateTime(currentSystemDefault())
+        // 凌晨 4 點前算作前一天
+        val date = if (now.hour < 4) {
+            val yesterdayInstant = Clock.System.now().minus(24, DateTimeUnit.HOUR, currentSystemDefault())
+            yesterdayInstant.toLocalDateTime(currentSystemDefault()).date
+        } else {
+            now.date
+        }
+        return "${date.year}-${(date.month.ordinal + 1).toString().padStart(2, '0')}-${date.dayOfMonth.toString().padStart(2, '0')}"
     }
 
     private fun getTodayStartMillis(): Long {
-        val now = Clock.System.now().toLocalDateTime(currentSystemDefault()).date
-        return now.atStartOfDayIn(currentSystemDefault()).toEpochMilliseconds()
+        val now = Clock.System.now().toLocalDateTime(currentSystemDefault())
+        val date = if (now.hour < 4) {
+            Clock.System.now().minus(24, DateTimeUnit.HOUR, currentSystemDefault()).toLocalDateTime(currentSystemDefault()).date
+        } else {
+            now.date
+        }
+        return date.atStartOfDayIn(currentSystemDefault()).toEpochMilliseconds()
     }
 
     private fun checkDailyLogin(user: UserEntity?) {
@@ -206,18 +218,37 @@ class DashboardViewModel : ViewModel() {
 
     fun claimTask(taskId: String) {
         viewModelScope.launch {
-            val task = todayTasks.value.find { it.taskId == taskId }
+            val taskList = todayTasks.value
+            val task = taskList.find { it.taskId == taskId }
             if (task != null && task.currentProgress >= task.targetValue && !task.isClaimed) {
+                // 1. 領取基礎獎勵
                 taskDao.insertOrUpdateTask(task.copy(isClaimed = true))
                 val userId = user.value?.id ?: "default_user"
                 userDao.earnCoins(
                     userId = userId,
-                    amount = 20,
+                    amount = 10,
                     type = "TASK_REWARD",
-                    description = "完成任務: ${task.taskType}",
+                    description = "任務獎勵: ${task.taskType}",
                     refId = taskId,
                     transactionDao = transactionDao
                 )
+
+                // 2. 檢查是否達成「6 選 3」大獎
+                val claimedCount = taskList.count { it.isClaimed } + 1
+                if (claimedCount == 3) {
+                    userDao.earnCoins(
+                        userId = userId,
+                        amount = 50,
+                        type = "DAILY_BONUS",
+                        description = "每日任務大滿貫 (3/3)",
+                        refId = "BONUS_${getTodayKey()}",
+                        transactionDao = transactionDao
+                    )
+                    // 同時給予養分
+                    userDao.insertOrUpdateUser(user.value!!.copy(
+                        nutrient = user.value!!.nutrient + 20
+                    ))
+                }
             }
         }
     }
@@ -226,9 +257,12 @@ class DashboardViewModel : ViewModel() {
         viewModelScope.launch {
             val dateKey = getTodayKey()
             val defaultTasks = listOf(
-                DailyTaskEntity("task_water", "WATER", 0, 3, false, dateKey),
-                DailyTaskEntity("task_bottle", "BOTTLE", 0, 1, false, dateKey),
-                DailyTaskEntity("task_focus_60", "FOCUS_60", 0, 1, false, dateKey)
+                DailyTaskEntity("task_focus_60", "FOCUS_60", 0, 60, false, dateKey),
+                DailyTaskEntity("task_garden", "GARDEN_WORK", 0, 2, false, dateKey),
+                DailyTaskEntity("task_bottle", "BOTTLE_SEND", 0, 1, false, dateKey),
+                DailyTaskEntity("task_emoji", "SOCIAL_EMOJI", 0, 1, false, dateKey),
+                DailyTaskEntity("task_pomo", "POMO_CYCLE", 0, 1, false, dateKey),
+                DailyTaskEntity("task_quote", "QUOTE_CLICK", 0, 1, false, dateKey)
             )
             defaultTasks.forEach { taskDao.insertOrUpdateTask(it) }
         }

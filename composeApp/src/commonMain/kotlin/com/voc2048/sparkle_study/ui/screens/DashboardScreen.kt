@@ -3,6 +3,7 @@ package com.voc2048.sparkle_study.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,6 +15,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -175,11 +177,52 @@ fun DashboardScreen(
                     shape = RoundedCornerShape(28.dp),
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
-                        Text("每日任務", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text("連續登入 ${user?.loginStreak ?: 1} 天 (獎勵 +5 🪙)", fontSize = 12.sp, color = Color.Gray)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        tasks.forEach { task ->
-                            TaskItem(task) { dashboardViewModel.claimTask(task.taskId) }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("每日挑戰", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            val claimedCount = tasks.count { it.isClaimed }
+                            Surface(
+                                color = if (claimedCount >= 3) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    "${claimedCount.coerceAtMost(3)} / 3 達成獎勵",
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    color = if (claimedCount >= 3) MaterialTheme.colorScheme.primary else Color.Gray
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        LinearProgressIndicator(
+                            progress = { (tasks.count { it.isClaimed }.toFloat() / 3f).coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
+                            gapSize = 0.dp,
+                            drawStopIndicator = {}
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        val claimedCount = tasks.count { it.isClaimed }
+                        val isChallengeFinished = claimedCount >= 3
+
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            items(tasks.size) { index ->
+                                TaskItem(
+                                    task = tasks[index], 
+                                    isChallengeFinished = isChallengeFinished
+                                ) { 
+                                    dashboardViewModel.claimTask(tasks[index].taskId) 
+                                }
+                            }
                         }
                     }
                 }
