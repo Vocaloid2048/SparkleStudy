@@ -4,12 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.voc2048.sparkle_study.database.DailyTaskEntity
 import com.voc2048.sparkle_study.database.UserEntity
 import com.voc2048.sparkle_study.ui.viewmodels.DashboardViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun TopStatsBar(user: UserEntity?) {
@@ -113,39 +116,61 @@ fun TaskItem(task: DailyTaskEntity, onClaim: () -> Unit) {
 @Composable
 fun LoginRewardRow(streak: Int) {
     val rewards = listOf(5, 10, 5, 15, 5, 20, 50)
+    val listState = rememberLazyListState()
+    
+    // Calculate current day in cycle (1-7)
+    val currentDayInCycle = ((streak - 1) % 7) + 1
+    
+    LaunchedEffect(streak) {
+        delay(500)
+        // Scroll to center the current day (index is day - 1)
+        val targetIndex = (currentDayInCycle - 1).coerceIn(0, 6)
+        listState.animateScrollToItem(targetIndex)
+    }
+
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text("接下來 7 天登入獎勵", fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
         LazyRow(
+            state = listState,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {
             items(7) { index ->
                 val day = index + 1
-                val isClaimed = day <= (streak % 7)
+                val isClaimed = day <= currentDayInCycle
+                val isToday = day == currentDayInCycle
+                
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isClaimed) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .background(
+                            when {
+                                isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                isClaimed -> MaterialTheme.colorScheme.primaryContainer
+                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            }
+                        )
                         .padding(16.dp)
                         .width(90.dp)
                 ) {
                     Box(modifier = Modifier.size(28.dp), contentAlignment = Alignment.Center) {
-                        if (isClaimed) {
-                            Icon(
-                                Icons.Default.Check, 
-                                contentDescription = null, 
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                                modifier = Modifier.size(28.dp)
-                            )
-                        } else {
-                            Text("第${day}天", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
-                        }
+                        Text(
+                            "第${day}天", 
+                            fontSize = 12.sp, 
+                            color = if (isClaimed) MaterialTheme.colorScheme.primary else Color.Gray, 
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("🪙", fontSize = 32.sp)
+                    Text(if (isClaimed) "✅" else "🪙", fontSize = 32.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("${rewards[index]}", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = if (isClaimed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        "${rewards[index]}", 
+                        fontSize = 18.sp, 
+                        fontWeight = FontWeight.ExtraBold, 
+                        color = if (isClaimed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }

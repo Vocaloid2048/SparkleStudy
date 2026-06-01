@@ -24,6 +24,7 @@ class DashboardViewModel : ViewModel() {
     private val prefs = Preferences()
 
     val user: StateFlow<UserEntity?> = userDao.getUser()
+        .onEach { checkDailyLogin(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val activePlant: StateFlow<PlantEntity?> = plantDao.getAllPlants()
@@ -85,6 +86,52 @@ class DashboardViewModel : ViewModel() {
     private fun getTodayStartMillis(): Long {
         val now = Clock.System.now().toLocalDateTime(currentSystemDefault()).date
         return now.atStartOfDayIn(currentSystemDefault()).toEpochMilliseconds()
+    }
+
+    private fun checkDailyLogin(user: UserEntity?) {
+        if (user == null) return
+        val today = getTodayKey()
+        if (prefs.lastLoginDate == today) return
+
+        viewModelScope.launch {
+            val lastDate = prefs.lastLoginDate
+            prefs.lastLoginDate = today
+            
+            var newStreak = user.loginStreak
+            if (lastDate.isNotEmpty()) {
+                val lastLocalDate = LocalDate.parse(lastDate)
+                val todayDate = LocalDate.parse(today)
+                val daysDiff = lastLocalDate.daysUntil(todayDate)
+                
+                if (daysDiff == 1) {
+                    newStreak++
+                } else if (daysDiff > 1) {
+                    newStreak = 1
+                }
+            } else {
+                newStreak = 1
+            }
+
+            // Award coins based on streak (cycle of 7)
+            val rewards = listOf(5, 10, 5, 15, 5, 20, 50)
+            val rewardIndex = (newStreak - 1) % 7
+            val rewardAmount = rewards[rewardIndex]
+
+            userDao.earnCoins(
+                userId = user.id,
+                amount = rewardAmount,
+                type = "DAILY_LOGIN",
+                description = "每日登入獎勵 (第 $newStreak 天)",
+                refId = today,
+                transactionDao = transactionDao
+            )
+
+            userDao.insertOrUpdateUser(user.copy(
+                loginStreak = newStreak,
+                coins = user.coins + rewardAmount,
+                lastSyncAt = Clock.System.now().toEpochMilliseconds()
+            ))
+        }
     }
 
     fun claimTask(taskId: String) {

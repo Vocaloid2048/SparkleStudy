@@ -37,6 +37,7 @@ class Preferences {
         const val DAILY_GOAL_MINUTES = "daily_goal_minutes"
         const val DEDUCTED_COUNT_TODAY = "deducted_count_today"
         const val LAST_DEDUCTION_DATE = "last_deduction_date"
+        const val LAST_LOGIN_DATE = "last_login_date"
     }
 
     // --- Core Identity ---
@@ -128,4 +129,8 @@ class Preferences {
     var lastDeductionDate: String
         get() = settings.getString(Keys.LAST_DEDUCTION_DATE, "")
         set(value) = settings.putString(Keys.LAST_DEDUCTION_DATE, value)
+
+    var lastLoginDate: String
+        get() = settings.getString(Keys.LAST_LOGIN_DATE, "")
+        set(value) = settings.putString(Keys.LAST_LOGIN_DATE, value)
 }
