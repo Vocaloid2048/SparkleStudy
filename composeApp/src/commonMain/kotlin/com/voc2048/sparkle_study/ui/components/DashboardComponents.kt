@@ -1,6 +1,7 @@
 package com.voc2048.sparkle_study.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,7 +26,10 @@ import androidx.compose.ui.unit.sp
 import com.voc2048.sparkle_study.database.DailyTaskEntity
 import com.voc2048.sparkle_study.database.UserEntity
 import com.voc2048.sparkle_study.ui.viewmodels.DashboardViewModel
+import files.Res
+import files.ic_coin
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun TopStatsBar(user: UserEntity?) {
@@ -71,8 +75,17 @@ fun TopStatsBar(user: UserEntity?) {
             color = MaterialTheme.colorScheme.tertiaryContainer,
             modifier = Modifier.height(28.dp)
         ) {
-            Row(modifier = Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("🪙 ${user?.coins ?: 0}", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp), 
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.ic_coin), 
+                    contentDescription = null, 
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("${user?.coins ?: 0}", fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -161,13 +174,20 @@ fun TaskItem(
                         color = Color.Gray,
                         textAlign = TextAlign.Center
                     )
-                    Text(
-                        "獎勵: 10 🪙", 
-                        fontSize = 14.sp, 
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
-                        textAlign = TextAlign.Center
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "獎勵: 10 ", 
+                            fontSize = 14.sp, 
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
+                            textAlign = TextAlign.Center
+                        )
+                        Image(
+                            painter = painterResource(Res.drawable.ic_coin), 
+                            contentDescription = null, 
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
             }
             
@@ -243,7 +263,17 @@ fun LoginRewardRow(streak: Int) {
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(if (isClaimed) "✅" else "🪙", fontSize = 32.sp)
+                    Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                        if (isClaimed) {
+                            Text("✅", fontSize = 24.sp)
+                        } else {
+                            Image(
+                                painter = painterResource(Res.drawable.ic_coin), 
+                                contentDescription = null, 
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "${rewards[index]}", 

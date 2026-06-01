@@ -10,6 +10,7 @@ class Preferences {
 
     object Keys {
         const val APP_LANGUAGE = "app_language"
+        const val THEME_MODE = "theme_mode"
         const val NOTIFICATIONS_ENABLED = "notifications_enabled"
         const val USER_LEVEL = "user_level"
         const val USER_NAME = "user_name"
@@ -115,6 +116,10 @@ class Preferences {
     var appLanguage: String
         get() = settings.getString(Keys.APP_LANGUAGE, "en")
         set(value) = settings.putString(Keys.APP_LANGUAGE, value)
+
+    var themeMode: String
+        get() = settings.getString(Keys.THEME_MODE, "SYSTEM")
+        set(value) = settings.putString(Keys.THEME_MODE, value)
 
     var notificationsEnabled: Boolean
         get() = settings.getBoolean(Keys.NOTIFICATIONS_ENABLED, true)

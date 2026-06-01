@@ -94,3 +94,11 @@ expect fun isUserDistracted(): Boolean
  * This is monotonic and unaffected by system clock changes.
  */
 expect fun getUptimeMillis(): Long
+
+/**
+ * Set the system bars (status and navigation) style.
+ * @param isDark If true, icons will be light (for dark backgrounds). 
+ *               If false, icons will be dark (for light backgrounds).
+ */
+@Composable
+expect fun SetSystemBarsStyle(isDark: Boolean)

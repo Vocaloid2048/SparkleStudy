@@ -101,7 +101,7 @@ fun FocusTimerWater(
                 Box(
                     modifier = Modifier
                         .size(260.dp)
-                        .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        .background(scheme.surface.copy(alpha = 0.4f), CircleShape)
                 )
             }
         }
@@ -134,7 +134,7 @@ fun FocusTimerWater(
                         text = timerText,
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
+                        color = scheme.onBackground,
                         letterSpacing = 2.sp
                     )
                 }
@@ -162,7 +162,7 @@ fun FocusTimerWater(
                         text = timerText,
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = scheme.onBackground.copy(alpha = 0.7f),
                         letterSpacing = 2.sp
                     )
                 }
@@ -222,13 +222,13 @@ fun FocusTimerWater(
             }
         }
 
-        // 4. 倒數文字 (放在水前方，白色)
+        // 4. 倒數文字 (放在水前方，暖可可色)
         if (showText && (!isTimerWaving || isTimerTextBack)) {
             Text(
                 text = timerText,
                 fontSize = 54.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
+                color = scheme.onBackground,
                 letterSpacing = 2.sp
             )
         }
@@ -251,7 +251,7 @@ fun FocusTimerWater(
 
             drawPath(
                 path = strawPath,
-                color = Color.White.copy(alpha = 0.6f),
+                color = scheme.outline.copy(alpha = 0.8f),
                 style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
             )
             
@@ -285,7 +285,7 @@ fun FocusTimerWater(
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(Color.Transparent, Color.White.copy(alpha = 0.2f)),
+                        colors = listOf(Color.Transparent, scheme.outlineVariant.copy(alpha = 0.3f)),
                         center = center,
                         radius = size.width / 2
                     )

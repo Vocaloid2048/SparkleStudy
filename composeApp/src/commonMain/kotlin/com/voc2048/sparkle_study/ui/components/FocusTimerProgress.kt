@@ -83,7 +83,7 @@ fun FocusTimerProgress(
 
             // 0. 繪製底色圓環
             drawCircle(
-                color = Color.White.copy(alpha = 0.3f),
+                color = scheme.outlineVariant,
                 radius = radius,
                 center = center,
                 style = Stroke(width = 1.5.dp.toPx())
@@ -134,7 +134,7 @@ fun FocusTimerProgress(
                 Box(
                     modifier = Modifier
                         .size(260.dp)
-                        .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        .background(scheme.surface.copy(alpha = 0.4f), CircleShape)
                 )
             }
         }
@@ -151,14 +151,12 @@ fun FocusTimerProgress(
                 val timerText = formatSecondsToTimerString(displayTime)
                 
                 Box(contentAlignment = Alignment.Center) {
-                    val shadowColor = Color.Black.copy(alpha = 0.8f)
+                    val shadowColor = scheme.primary.copy(alpha = 0.2f)
                     
                     if(needShadow){
                         listOf(
-                            Offset(-2f, -2f), Offset(2f, -2f),
-                            Offset(-2f, 2f), Offset(2f, 2f),
-                            Offset(0f, -2f), Offset(0f, 2f),
-                            Offset(-2f, 0f), Offset(2f, 0f)
+                            Offset(-1f, -1f), Offset(1f, -1f),
+                            Offset(-1f, 1f), Offset(1f, 1f)
                         ).forEach { offset ->
                             Text(
                                 text = timerText,
@@ -175,7 +173,7 @@ fun FocusTimerProgress(
                         text = timerText,
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
+                        color = scheme.onBackground,
                         letterSpacing = 2.sp
                     )
                 }

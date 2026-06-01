@@ -171,3 +171,8 @@ actual suspend fun ByteReadChannel.writeToFile(filepath: String) {
 actual fun exitApp() {
     exitProcess(0)
 }
+
+@Composable
+actual fun SetSystemBarsStyle(isDark: Boolean) {
+    // Desktop doesn't have system status bars in the same way as mobile.
+}

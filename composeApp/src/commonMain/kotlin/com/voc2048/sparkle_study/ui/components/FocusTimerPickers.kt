@@ -78,13 +78,13 @@ fun NumberPickerSlot(
                             text = num.toString().padStart(2, '0'),
                             fontSize = if (isSelected) 38.sp else 30.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.4f)
+                            color = if (isSelected) SparkleColorScheme.primary else SparkleColorScheme.onBackground.copy(alpha = 0.4f)
                         )
                         if (isSelected && unit.isNotEmpty()) {
                             Text(
                                 text = unit,
                                 fontSize = 14.sp,
-                                color = Color.White,
+                                color = SparkleColorScheme.onBackground.copy(alpha = 0.7f),
                                 modifier = Modifier.padding(start = 4.dp)
                             )
                         }

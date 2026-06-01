@@ -14,12 +14,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.setValue
 import com.voc2048.sparkle_study.BuildKonfig
 import com.voc2048.sparkle_study.ui.components.AccountCard
 import com.voc2048.sparkle_study.ui.components.SettingsGroup
 import com.voc2048.sparkle_study.ui.components.SettingsItem
 import com.voc2048.sparkle_study.ui.viewmodels.TimerSwitchBehavior
 import com.voc2048.sparkle_study.utils.Preferences
+import com.voc2048.sparkle_study.utils.ThemeMode
+import com.voc2048.sparkle_study.utils.appThemeState
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.*
 
@@ -55,6 +58,41 @@ fun SettingsScreen() {
 
         item {
             SettingsGroup(title = "偏好設定") {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text("外觀主題", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        ThemeMode.entries.forEach { mode ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(
+                                    selected = appThemeState.value == mode,
+                                    onClick = { 
+                                        appThemeState.value = mode 
+                                        prefs.themeMode = mode.name
+                                    }
+                                )
+                                val text = when (mode) {
+                                    ThemeMode.LIGHT -> "淺色"
+                                    ThemeMode.DARK -> "深色"
+                                    ThemeMode.SYSTEM -> "自動"
+                                }
+                                Text(
+                                    text, 
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.clickable { 
+                                        appThemeState.value = mode 
+                                        prefs.themeMode = mode.name
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 SettingsItem(
                     icon = FeatherIcons.Bell, 
                     title = "通知設定",
